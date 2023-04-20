@@ -1,0 +1,31 @@
+.cf-sc-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.cf-sc-card-wrapper {
+  padding-top: var(--scroll-animation-offset-top)
+}
+
+.cf-sc-card {
+  position: relative;
+  background-color: white;
+  padding: 16px;
+  box-sizing: border-box;
+  transition: transform var(--animation-duration) ease-in-out;
+}
+
+.cf-sc-fadeIn {
+  animation: cf-sc-slide-in var(--animation-duration) ease-in-out;
+  display: grid;
+}
+
+@keyframes cf-sc-slide-in {
+  from {
+    transform: translateX(var(--scroll-animation-offset-right));
+  }
+  to {
+    transform: translateX(0);
+  }
+}

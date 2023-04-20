@@ -13,14 +13,13 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "isolatedModules": true,
-    "declarationMap": false,
-    "declaration": true,
-    "emitDeclarationOnly": true,
+    "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "paths": {
-      "@chat-form/core": ["src/index.tsx"]
+      "@chat-form/core": ["src/index.tsx"],
+      "@chat-form/core/*": ["src/*"]
     }
   },
-  "exclude": ["vite.config.ts", "docs/**/*"]
+  "include": ["src/**/*", "docs/**/*", "test/**/*"]
 }

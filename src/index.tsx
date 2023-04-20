@@ -1,5 +1,1 @@
-import React from 'react'
-
-export default () => {
-  return <div>Hello World</div>
-}
+export { default as SequenceCard } from './components/SequenceCard'

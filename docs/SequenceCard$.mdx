@@ -1,0 +1,31 @@
+---
+title: SequenceCard
+---
+
+import SequenceCard from './demo/SequenceCard'
+
+### SequenceCard
+
+SequenceCard is suitable for displaying a series of steps, usually a directed acyclic graph (DAG). For example the graph below:
+
+<div style={{ display: 'flex', flexDirection: 'row' }}>
+  <div style={{ flex: 1 }}>
+    <img
+      src="https://lf3-static.bytednsdoc.com/obj/eden-cn/fvyaeh7pfuhpaps/dag.png"
+      alt="dag"
+      width="auto"
+      height="auto"
+      style={{
+        margin: '0 auto',
+        display: 'block',
+        maxWidth: 500,
+        minWidth: 200,
+      }}
+    />
+  </div>
+  <div style={{ flexBasis: 300 }}>
+    <SequenceCard />
+  </div>
+</div>
+
+When edit a previous step, all the steps after it will be cleared, since the active route may change.
