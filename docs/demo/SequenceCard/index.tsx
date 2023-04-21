@@ -1,18 +1,18 @@
+/**
+ * @title Sequence Card
+ * @description Basic usage
+ */
+
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
+import styles from './index.module.css'
 
 export default () => {
   return (
     <SequenceCard
-      containerStyle={{
-        width: 300,
-        height: 500,
-        border: '1px solid #e8e8e8',
-        background: 'rgba(0,0,0,0.02)',
-        padding: '0 16px',
-      }}
-      initialSteps={[...Array(100).keys()].map((k) => `s${k}`)}
-      steps={[...Array(888).keys()].map((key) => {
+      containerClassName={styles.demo}
+      initialSteps={[...Array(20).keys()].map((k) => `s${k}`)}
+      steps={[...Array(100).keys()].map((key) => {
         return {
           id: `s${key}`,
           renderStep: (ctx) =>
@@ -39,7 +39,7 @@ export default () => {
                   style={{ marginTop: 16 }}
                   onClick={() => ctx.gotoStep(`s${key + 1}`)}
                 >
-                  确认
+                  Next
                 </button>
               </>
             ) : (
@@ -59,8 +59,14 @@ export default () => {
             ),
         }
       })}
-      animationDuration={250}
-      gap={16}
+      scrollFn={(dom) => {
+        dom.parentElement?.scrollTo({
+          top: dom.offsetTop,
+          // scroll to the previous element
+          // top: (dom.previousElementSibling as HTMLElement).offsetTop,
+          behavior: 'smooth',
+        })
+      }}
     />
   )
 }

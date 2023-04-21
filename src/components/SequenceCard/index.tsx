@@ -11,39 +11,65 @@ import classnames from 'classnames'
 import './index.css'
 import { getBem } from '@chat-form/core/utils/classname'
 
-interface Props {
+export interface Props {
   /** All available steps */
   steps: Step[]
-  /** Array of initial step keys  */
+  /** Array of initial step keys
+   *  @defaultValue []
+   */
   initialSteps?: string[]
-  /** Slide in / slide out distance in px */
+  /** Slide in / slide out distance in px
+   *  @defaultValue 200
+   */
   animationOffsetRight?: number
-  /** card gap in px, the gap will be preserved after each scroll */
+  /** card gap in px, the gap will be preserved after each scroll
+   * @defaultValue 16
+   */
   gap?: number
-  /** animation time in ms */
+  /** animation time in ms
+   * @defaultValue 250
+   */
   animationDuration?: number
+  /** customize scroll function
+   *  @defaultValue dom.scrollIntoView
+   */
+  scrollFn?: (dom: HTMLDivElement) => void
+  /** container class name */
   containerClassName?: string
+  /** container style */
   containerStyle?: React.CSSProperties
 }
 
-interface Ctx {
+export interface Ctx {
+  /** Whether the current step is active */
   isActive: boolean
+  /** navigate to a specific step
+   * @param id step id
+   * @param delay animation delay in ms
+   */
   gotoStep: (id: string, delay?: number) => void
 }
 
-interface Step {
-  /** 步骤唯一 key */
+export interface Step {
+  /** Unique key of the step */
   id: string
-  /** 渲染卡片内容 */
+  /** render function of the step */
   renderStep: (ctx: Ctx) => React.ReactNode
 }
 
-const cs = getBem('sc')
-
 export interface ListRef {
-  gotoStep: (id: string) => void
+  /** navigate to a specific step
+   * @param id step id
+   * @param delay animation delay in ms
+   */
+  gotoStep: (id: string, delay?: number) => void
+  /** scroll to a specific step, this action will not toggle active state
+   * @param id step id
+   */
   scrollToCard: (id?: string) => void
 }
+
+const cs = getBem('sc')
 
 export default forwardRef((props: Props, ref: Ref<ListRef>) => {
   const {
@@ -54,6 +80,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     gap = 16,
     containerClassName,
     containerStyle,
+    scrollFn = (dom) => dom.scrollIntoView({ behavior: 'smooth' }),
   } = props
   const containerDom = useRef<HTMLDivElement>(null)
   const cardDoms = useRef<Record<string, HTMLDivElement | null>>({})
@@ -83,11 +110,13 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     return steps.current.find((ele) => ele.id === currentStep)
   }, [currentStep, steps])
 
-  const findPrevStepDom = useMemoizedFn((id?: string) => {
-    const prevIndex = prevSteps.findIndex((ele) => ele === id ?? step?.id) - 1
-
+  const findStep = useMemoizedFn((id?: string) => {
+    if (!id) {
+      return activeDom.current
+    }
+    const index = prevSteps.findIndex((ele) => ele === id)
     const prevStep =
-      prevIndex > -1 ? prevSteps[prevIndex] : prevSteps[prevSteps.length - 1]
+      index > -1 ? prevSteps[index] : prevSteps[prevSteps.length - 1]
     return cardDoms.current[prevStep]
   })
 
@@ -103,9 +132,9 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
 
   const scrollToCard = useMemoizedFn((id?: string) => {
     if (step) {
-      const dom = findPrevStepDom(id)
+      const dom = findStep(id)
       if (dom) {
-        dom.scrollIntoView({ behavior: 'smooth' })
+        scrollFn(dom)
         setDistanceBottom(getDistanceBottom())
       }
     }
