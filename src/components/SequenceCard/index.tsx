@@ -33,7 +33,7 @@ export interface Props {
   /** Customize scroll function
    *  @defaultValue dom.scrollIntoView
    */
-  scrollFn?: (dom: HTMLDivElement) => void
+  scrollFn?: (dom: HTMLDivElement, id: string) => void
   /** Container class name */
   containerClassName?: string
   /** Container style */
@@ -48,6 +48,10 @@ export interface Ctx {
    * @param delay animation delay in ms
    */
   gotoStep: (id: string, delay?: number) => void
+  /** Scroll to a specific step, this action will not toggle active state
+   * @param id step id
+   */
+  scrollToCard: (id?: string) => void
 }
 
 export interface Step {
@@ -134,8 +138,10 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     if (step) {
       const dom = findStep(id)
       if (dom) {
-        scrollFn(dom)
         setDistanceBottom(getDistanceBottom())
+        setTimeout(() => {
+          scrollFn(dom, id ?? step.id)
+        })
       }
     }
   })
@@ -239,7 +245,11 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
               }}
               key={prevStep.id}
             >
-              {prevStep?.renderStep({ gotoStep, isActive: false })}
+              {prevStep?.renderStep({
+                gotoStep,
+                scrollToCard,
+                isActive: false,
+              })}
             </div>
           </div>
         )
@@ -258,7 +268,9 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
         className={classnames(cs('fadeIn'), cs('card'), cs('active'))}
         key={step?.id}
       >
-        <div>{step?.renderStep?.({ gotoStep, isActive: true })}</div>
+        <div>
+          {step?.renderStep?.({ gotoStep, scrollToCard, isActive: true })}
+        </div>
       </div>
     </div>
   )

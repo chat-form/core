@@ -1,6 +1,6 @@
 /**
- * @title Sequence Card
- * @description Basic usage
+ * @title Stress Test
+ * @description Generate a lot of steps to test the fluency of animation.
  */
 
 import React from 'react'
@@ -11,8 +11,8 @@ export default () => {
   return (
     <SequenceCard
       containerClassName={styles.demo}
-      initialSteps={[...Array(20).keys()].map((k) => `${k}`)}
-      steps={[...Array(100).keys()].map((key) => {
+      initialSteps={[...Array(500).keys()].map((k) => `${k}`)}
+      steps={[...Array(1000).keys()].map((key, index) => {
         return {
           id: `${key}`,
           renderStep: (ctx) =>
@@ -22,7 +22,7 @@ export default () => {
                   <div style={{ marginBottom: 8 }}>
                     <div>Question {key}:</div>
                   </div>
-                  {[1, 2, 3].map((ele) => (
+                  {[...Array((index % 3) + 1).keys()].map((ele) => (
                     <div
                       key={ele}
                       onClick={() => ctx.gotoStep(`${key + 1}`, 48)}

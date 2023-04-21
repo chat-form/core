@@ -2,8 +2,6 @@
 title: SequenceCard
 ---
 
-import SequenceCard from './demo/SequenceCard'
-
 ## SequenceCard
 
 ### When to use
@@ -14,7 +12,23 @@ When navigate back to a previous step, all the steps after it will be reset, sin
 
 ### Demo
 
-<Demo src="./demo/SequenceCard/index.tsx" />
+#### Intergate with ChatGPT
+
+<Demo src="./demo/SequenceCard/chatGpt.tsx" />
+
+There is a prompt in Chinese you can refer to.
+
+```
+'你是一个电话接线员，请设计几个问题来收集一些信息，用来 {{Your intention here}}，构成一个有向无环图，直接以 JSON 的形式返回，不要其他文字，不要用 markdown 展示，示例如下：`[{"id":"flavour","question":"你喜欢的口味是什么？","answers":[{"name":"甜","key":"sweet","next":"sweet-food"},{"name":"咸","key":"salty","next":"salty-food"}]},{"id":"sweet-food","question":"你更喜欢以下哪种食物？","answers":[{"name":"可乐","key":"cola","next":"Q4"},{"name":"雪碧","key":"sprite","next":"Q4"}]},{"id":"salty-food","question":"你更喜欢以下哪种食物？","answers":[{"name":"包子","key":"Dim Sum","next":"Q5"},{"name":"披萨","key":"Pizza","next":"Q5"}]},{"id":"Thanks","question":"感谢您的回答！","answers":[]}]`'
+```
+
+#### Custom scroll behavior
+
+<Demo src="./demo/SequenceCard/customScroll.tsx" />
+
+#### Stress test
+
+<Demo src="./demo/SequenceCard/stressTest.tsx" />
 
 ### API
 

@@ -2,6 +2,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
+  position: relative;
 }
 
 .cf-sc-card-wrapper {

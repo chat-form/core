@@ -1,8 +1,11 @@
 import React from 'react'
 import { createTheme } from 'vite-pages-theme-doc'
+import Wrapper from '.'
 
 export default createTheme({
   logo: <div style={{ fontSize: '20px' }}>ChatForm</div>,
+  search: false,
+  AppWrapper: Wrapper,
   topNavs: [
     {
       label: 'Github',
