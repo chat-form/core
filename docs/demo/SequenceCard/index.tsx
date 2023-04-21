@@ -11,33 +11,30 @@ export default () => {
   return (
     <SequenceCard
       containerClassName={styles.demo}
-      initialSteps={[...Array(20).keys()].map((k) => `s${k}`)}
+      initialSteps={[...Array(20).keys()].map((k) => `${k}`)}
       steps={[...Array(100).keys()].map((key) => {
         return {
-          id: `s${key}`,
+          id: `${key}`,
           renderStep: (ctx) =>
             ctx.isActive ? (
               <>
                 <div>
                   <div style={{ marginBottom: 8 }}>
-                    <div>Question ${key}:</div>
+                    <div>Question {key}:</div>
                   </div>
-                  <div onClick={() => ctx.gotoStep(`s${key + 1}`, 48)}>
-                    <input type="checkbox" value={`${key}-1`} />
-                    {key}-1
-                  </div>
-                  <div onClick={() => ctx.gotoStep(`s${key + 1}`, 48)}>
-                    <input type="checkbox" value={`${key}-2`} />
-                    {key}-2
-                  </div>
-                  <div onClick={() => ctx.gotoStep(`s${key + 1}`, 48)}>
-                    <input type="checkbox" value={`${key}-3`} />
-                    {key}-3
-                  </div>
+                  {[1, 2, 3].map((ele) => (
+                    <div
+                      key={ele}
+                      onClick={() => ctx.gotoStep(`${key + 1}`, 48)}
+                    >
+                      <input type="checkbox" value={`${key}-${ele}`} />
+                      {key}-{ele}
+                    </div>
+                  ))}
                 </div>
                 <button
                   style={{ marginTop: 16 }}
-                  onClick={() => ctx.gotoStep(`s${key + 1}`)}
+                  onClick={() => ctx.gotoStep(`${key + 1}`)}
                 >
                   Next
                 </button>
@@ -51,8 +48,8 @@ export default () => {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <div>Question ${key}:</div>
-                  <div onClick={() => ctx.gotoStep(`s${key}`)}>Edit</div>
+                  <div>Question {key}:</div>
+                  <div onClick={() => ctx.gotoStep(`${key}`)}>Edit</div>
                 </div>
                 <div>Done</div>
               </>

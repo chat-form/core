@@ -22,28 +22,28 @@ export interface Props {
    *  @defaultValue 200
    */
   animationOffsetRight?: number
-  /** card gap in px, the gap will be preserved after each scroll
+  /** Card gap in px, the gap will be preserved after each scroll
    * @defaultValue 16
    */
   gap?: number
-  /** animation time in ms
+  /** Animation time in ms
    * @defaultValue 250
    */
   animationDuration?: number
-  /** customize scroll function
+  /** Customize scroll function
    *  @defaultValue dom.scrollIntoView
    */
   scrollFn?: (dom: HTMLDivElement) => void
-  /** container class name */
+  /** Container class name */
   containerClassName?: string
-  /** container style */
+  /** Container style */
   containerStyle?: React.CSSProperties
 }
 
 export interface Ctx {
   /** Whether the current step is active */
   isActive: boolean
-  /** navigate to a specific step
+  /** Navigate to a specific step
    * @param id step id
    * @param delay animation delay in ms
    */
@@ -53,17 +53,17 @@ export interface Ctx {
 export interface Step {
   /** Unique key of the step */
   id: string
-  /** render function of the step */
+  /** Render function of the step */
   renderStep: (ctx: Ctx) => React.ReactNode
 }
 
 export interface ListRef {
-  /** navigate to a specific step
+  /** Navigate to a specific step
    * @param id step id
    * @param delay animation delay in ms
    */
   gotoStep: (id: string, delay?: number) => void
-  /** scroll to a specific step, this action will not toggle active state
+  /** Scroll to a specific step, this action will not toggle active state
    * @param id step id
    */
   scrollToCard: (id?: string) => void
