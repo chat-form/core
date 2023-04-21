@@ -8,6 +8,10 @@
     "build": "rimraf dist && BUILD_TYPE=lib vite build --outDir dist && tsc",
     "build:doc": "rimraf dist-docs && BUILD_TYPE=doc vite build --outDir dist-docs"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chat-form/core"
+  },  
   "keywords": [],
   "author": "",
   "type": "module",
