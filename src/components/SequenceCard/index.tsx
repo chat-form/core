@@ -1,4 +1,8 @@
-import { useMemoizedFn, useLatest } from '@chat-form/core/hooks'
+import {
+  useMemoizedFn,
+  useLatest,
+  useStateCallback,
+} from '@chat-form/core/hooks'
 import React, {
   forwardRef,
   Ref,
@@ -7,6 +11,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
+import { unstable_batchedUpdates } from 'react-dom'
 import classnames from 'classnames'
 import './index.css'
 import { getBem } from '@chat-form/core/utils/classname'
@@ -84,7 +89,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     gap = 16,
     containerClassName,
     containerStyle,
-    scrollFn = (dom) => dom.scrollIntoView({ behavior: 'smooth' }),
+    scrollFn: _scrollFn = (dom) => dom.scrollIntoView({ behavior: 'smooth' }),
   } = props
   const containerDom = useRef<HTMLDivElement>(null)
   const cardDoms = useRef<Record<string, HTMLDivElement | null>>({})
@@ -103,12 +108,15 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
   const [prevSteps, setPrevSteps] = useState<string[]>(initialSteps)
   const [aboutToRemoveSteps, setAboutToRemoveSteps] = useState<string[]>([])
   const aboutToEditStep = useRef('')
-  const [distanceBottom, setDistanceBottom] = useState(window.innerHeight)
+  const [distanceBottom, setDistanceBottom] = useStateCallback(
+    window.innerHeight
+  )
   // set a minimum animation duration currently
   const animationDuration = useMemo(
     () => Math.max(_animationDuration, 48),
     [_animationDuration]
   )
+  const scrollFn = useMemoizedFn(_scrollFn)
 
   const step = useMemo(() => {
     return steps.current.find((ele) => ele.id === currentStep)
@@ -138,9 +146,10 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     if (step) {
       const dom = findStep(id)
       if (dom) {
-        setDistanceBottom(getDistanceBottom())
-        setTimeout(() => {
-          scrollFn(dom, id ?? step.id)
+        setDistanceBottom(getDistanceBottom(), () => {
+          setTimeout(() => {
+            scrollFn(dom, id ?? step.id)
+          }, 16) // Safari need a slight delay to scroll correctly in edge cases
         })
       }
     }
@@ -232,7 +241,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
               }}
               className={cs('card')}
               onTransitionEnd={() => {
-                requestAnimationFrame(() => {
+                unstable_batchedUpdates(() => {
                   setPrevSteps((s) => {
                     const needKeep = (id: string) =>
                       !aboutToRemoveSteps.includes(id)

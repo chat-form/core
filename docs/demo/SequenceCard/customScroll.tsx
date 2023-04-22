@@ -70,7 +70,7 @@ export default () => {
           }
         }}
       />
-      <pre>{JSON.stringify(value)}</pre>
+      <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(value)}</pre>
     </>
   )
 }

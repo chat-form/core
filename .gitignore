@@ -4,3 +4,4 @@ dist
 dist-docs
 coverage
 *.local
+vite.config.ts.timestamp-*

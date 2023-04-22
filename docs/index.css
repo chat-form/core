@@ -2,3 +2,7 @@
   white-space: pre-wrap;
   padding: 16px 52px 16px 16px !important;
 }
+
+.markdown-el.vp-local-table {
+  display: block !important;
+}
