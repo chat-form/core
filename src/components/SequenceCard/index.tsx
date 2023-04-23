@@ -266,7 +266,11 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
           </div>
         )
       })}
-      <div ref={activeDom} className={cs('card-wrapper')}>
+      <div
+        key={step?.id}
+        ref={activeDom}
+        className={classnames(cs('card-wrapper'), cs('active'))}
+      >
         <div
           onAnimationEnd={() => {
             scrollToCard()
@@ -275,8 +279,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
             opacity: step ? 1 : 0,
             marginBottom: distanceBottom,
           }}
-          className={classnames(cs('fadeIn'), cs('card'), cs('active'))}
-          key={step?.id}
+          className={classnames(cs('fadeIn'), cs('card'))}
         >
           <div>
             {step?.renderStep?.({ gotoStep, scrollToCard, isActive: true })}
