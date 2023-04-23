@@ -5,6 +5,7 @@
 
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
+import { Radio, Space } from 'antd'
 import styles from './index.module.css'
 
 export default () => {
@@ -17,33 +18,32 @@ export default () => {
           id: `${key}`,
           renderStep: (ctx) =>
             ctx.isActive ? (
-              <>
-                <div>
-                  <div style={{ marginBottom: 8 }}>
-                    <div>Question {key}:</div>
-                  </div>
-                  {[...Array((index % 3) + 1).keys()].map((ele) => (
-                    <div
-                      key={ele}
-                      onClick={() => ctx.gotoStep(`${key + 1}`, 48)}
-                    >
-                      <input type="checkbox" value={`${key}-${ele}`} />
-                      {key}-{ele}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  style={{ marginTop: 16 }}
-                  onClick={() => ctx.gotoStep(`${key + 1}`)}
+              <div className={styles.card}>
+                <div>Question {key}:</div>
+                <Radio.Group
+                  buttonStyle="solid"
+                  className={styles.options}
+                  style={{ width: '100%' }}
                 >
-                  Next
-                </button>
-              </>
+                  <Space direction="vertical">
+                    {[...Array(((index % 3) + 1) * 4).keys()].map((ele) => {
+                      return (
+                        <Radio.Button
+                          onClick={() => ctx.gotoStep(`${key + 1}`, 48)}
+                          key={ele}
+                          value={ele}
+                        >
+                          {key}-{ele}
+                        </Radio.Button>
+                      )
+                    })}
+                  </Space>
+                </Radio.Group>
+              </div>
             ) : (
-              <>
+              <div className={styles.card}>
                 <div
                   style={{
-                    marginBottom: 8,
                     display: 'flex',
                     justifyContent: 'space-between',
                   }}
@@ -52,15 +52,13 @@ export default () => {
                   <div onClick={() => ctx.gotoStep(`${key}`)}>Edit</div>
                 </div>
                 <div>Done</div>
-              </>
+              </div>
             ),
         }
       })}
       scrollFn={(dom) => {
         dom.parentElement?.scrollTo({
           top: dom.offsetTop,
-          // scroll to the previous element
-          // top: (dom.previousElementSibling as HTMLElement).offsetTop,
           behavior: 'smooth',
         })
       }}

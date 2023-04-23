@@ -6,13 +6,11 @@
 }
 
 .cf-sc-card-wrapper {
-  padding-top: var(--scroll-animation-offset-top)
+  padding-top: var(--scroll-animation-offset-top);
 }
 
 .cf-sc-card {
   position: relative;
-  background-color: white;
-  padding: 16px;
   box-sizing: border-box;
   transition: transform var(--animation-duration) ease-in-out;
 }

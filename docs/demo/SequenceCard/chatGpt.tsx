@@ -6,56 +6,67 @@
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
 import styles from './index.module.css'
-import { json } from './mockdata'
+import { Input, Button, Space, Radio, Form } from 'antd'
+import { ad } from './mock/data'
+import Json from '../../components/Json'
+import FormValue from '../../components/FormValue'
 
 export default () => {
-  const [question, setQuestion] = React.useState(json)
-  const [value, setValue] = React.useState<Record<string, string>>({})
+  const [question, setQuestion] = React.useState(ad)
   const [intention, setIntention] = React.useState('回收二手手机')
   const [loading, setLoading] = React.useState(false)
   const [key, setKey] = React.useState(0)
+  const [form] = Form.useForm()
 
   return (
-    <>
+    <Form form={form}>
       <div style={{ overflow: 'auto' }}>
         <div style={{ marginBottom: 16 }}>
-          <span>Your intention:</span>
-          <input
-            style={{ margin: '0 8px' }}
-            value={intention}
-            onChange={(e) => setIntention(e.target.value)}
-          />
-          <button
-            disabled={loading}
-            onClick={async () => {
-              setLoading(true)
-              try {
-                const res = await fetch(`https://api.chat-form.io/`, {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    // TODO: prompt user to enter their own token
-                    token: 'sk-123456',
-                    intention: intention,
-                  }),
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                })
-                if (res.status === 200) {
-                  const data = await res.json()
-                  setQuestion(data)
-                  setKey((k) => k + 1)
-                  setValue({})
+          <Space.Compact style={{ width: '100%' }}>
+            <Input.Search
+              addonBefore="Your intention:"
+              style={{ width: 500 }}
+              value={intention}
+              onChange={(e) => setIntention(e.target.value)}
+              onSearch={async () => {
+                setLoading(true)
+                try {
+                  const res = await fetch(`https://api.chat-form.io/`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      // TODO: prompt user to enter their own token
+                      token: 'sk-123456',
+                      intention: intention,
+                    }),
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  })
+                  if (res.status === 200) {
+                    const data = await res.json()
+                    setQuestion(data)
+                    setKey((k) => k + 1)
+                    form.resetFields()
+                    setLoading(false)
+                  }
+                } finally {
                   setLoading(false)
                 }
-              } finally {
-                setLoading(false)
+              }}
+              enterButton={
+                <Button loading={loading} type="default">
+                  Generate
+                </Button>
               }
-            }}
-          >
-            Generate Questions
-          </button>
+            />
+          </Space.Compact>
         </div>
+        {loading && (
+          <div style={{ marginBottom: 16 }}>
+            Please wait and notice that ChatGPT may generate incorrect result in
+            some cases
+          </div>
+        )}
         <SequenceCard
           key={key}
           containerClassName={styles.demo}
@@ -64,27 +75,45 @@ export default () => {
               id: ele.id,
               renderStep: (ctx) => {
                 return ctx.isActive ? (
-                  <div>
+                  <div className={styles.card}>
                     <div>{ele.question}</div>
-                    {ele.answers.map((i, index) => (
-                      <div
-                        key={i.key}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                          setValue((v) => ({ ...v, [ele.id]: i.key }))
-                          ctx.gotoStep(i.next, 48)
-                        }}
+                    <Form.Item noStyle name={ele.id}>
+                      <Radio.Group
+                        buttonStyle="solid"
+                        className={styles.options}
+                        style={{ width: '100%' }}
                       >
-                        - {i.name}
-                      </div>
-                    ))}
+                        <Space direction="vertical">
+                          {ele.answers.map((i) => {
+                            return (
+                              <Radio.Button
+                                onClick={() => ctx.gotoStep(i.next, 48)}
+                                key={i.key}
+                                value={i.key}
+                              >
+                                {i.name}
+                              </Radio.Button>
+                            )
+                          })}
+                        </Space>
+                      </Radio.Group>
+                    </Form.Item>
                   </div>
                 ) : (
-                  <div onClick={() => ctx.gotoStep(ele.id, 48)}>
+                  <div className={styles.card}>
                     <div>{ele.question}</div>
-                    <div>
-                      {ele.answers.find((i) => i.key === value[ele.id])?.name}
-                    </div>
+                    <Form.Item noStyle name={ele.id}>
+                      <FormValue
+                        formatter={(v) => (
+                          <div
+                            className={styles.result}
+                            onClick={() => ctx.gotoStep(ele.id, 48)}
+                          >
+                            {ele.answers.find((i) => i.key === v)?.name}
+                          </div>
+                        )}
+                      />
+                    </Form.Item>
                   </div>
                 )
               },
@@ -97,11 +126,22 @@ export default () => {
                 top: sibling.offsetTop,
                 behavior: 'smooth',
               })
+            } else {
+              dom.parentElement?.scrollTo({
+                top: 0,
+              })
             }
           }}
         />
       </div>
-      <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(value)}</pre>
-    </>
+      <Json
+        width={500}
+        json={
+          <Form.Item shouldUpdate={() => true}>
+            {() => JSON.stringify(form.getFieldsValue(true, () => true))}
+          </Form.Item>
+        }
+      />
+    </Form>
   )
 }

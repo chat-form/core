@@ -139,7 +139,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
       window.innerHeight
     )
     const currentHeight = activeDom.current?.getBoundingClientRect().height || 0
-    return Math.max(containerHeight - currentHeight - gap, 0)
+    return Math.max(containerHeight - currentHeight, gap)
   })
 
   const scrollToCard = useMemoizedFn((id?: string) => {
@@ -168,6 +168,9 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     }
     const exec = () => {
       if (currentIndex > targetIndex) {
+        if (targetIndex === 0) {
+          scrollFn(findStep(id)!, id)
+        }
         aboutToEditStep.current = id || ''
         setCurrentStep('')
         const index = prevSteps.findIndex((ele) => ele === id)
@@ -263,22 +266,21 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
           </div>
         )
       })}
-
-      <div
-        onAnimationEnd={() => {
-          scrollToCard()
-        }}
-        ref={activeDom}
-        style={{
-          opacity: step ? 1 : 0,
-          marginTop: gap,
-          marginBottom: distanceBottom,
-        }}
-        className={classnames(cs('fadeIn'), cs('card'), cs('active'))}
-        key={step?.id}
-      >
-        <div>
-          {step?.renderStep?.({ gotoStep, scrollToCard, isActive: true })}
+      <div ref={activeDom} className={cs('card-wrapper')}>
+        <div
+          onAnimationEnd={() => {
+            scrollToCard()
+          }}
+          style={{
+            opacity: step ? 1 : 0,
+            marginBottom: distanceBottom,
+          }}
+          className={classnames(cs('fadeIn'), cs('card'), cs('active'))}
+          key={step?.id}
+        >
+          <div>
+            {step?.renderStep?.({ gotoStep, scrollToCard, isActive: true })}
+          </div>
         </div>
       </div>
     </div>

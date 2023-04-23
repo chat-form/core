@@ -11,7 +11,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/chat-form/core"
-  },  
+  },
   "keywords": [],
   "author": "",
   "type": "module",
@@ -38,6 +38,7 @@
     "@types/node": "^18.15.11",
     "@types/react": "^18.0.33",
     "@vitejs/plugin-react": "^3.1.0",
+    "antd": "^5.4.4",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
