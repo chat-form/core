@@ -1,8 +1,4 @@
-import {
-  useMemoizedFn,
-  useLatest,
-  useStateCallback,
-} from '@chat-form/core/hooks'
+import { useMemoizedFn, useLatest } from '@chat-form/core/hooks'
 import React, {
   forwardRef,
   Ref,
@@ -11,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { unstable_batchedUpdates } from 'react-dom'
+import { flushSync, unstable_batchedUpdates } from 'react-dom'
 import classnames from 'classnames'
 import './index.css'
 import { getBem } from '@chat-form/core/utils/classname'
@@ -108,9 +104,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
   const [prevSteps, setPrevSteps] = useState<string[]>(initialSteps)
   const [aboutToRemoveSteps, setAboutToRemoveSteps] = useState<string[]>([])
   const aboutToEditStep = useRef('')
-  const [distanceBottom, setDistanceBottom] = useStateCallback(
-    window.innerHeight
-  )
+  const [distanceBottom, setDistanceBottom] = useState(window.innerHeight)
   // set a minimum animation duration currently
   const animationDuration = useMemo(
     () => Math.max(_animationDuration, 48),
@@ -146,11 +140,12 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     if (step) {
       const dom = findStep(id)
       if (dom) {
-        setDistanceBottom(getDistanceBottom(), () => {
-          setTimeout(() => {
-            scrollFn(dom, id ?? step.id)
-          }, 16) // Safari need a slight delay to scroll correctly in edge cases
+        flushSync(() => {
+          setDistanceBottom(getDistanceBottom())
         })
+        setTimeout(() => {
+          scrollFn(dom, id ?? step.id)
+        }, 16) // Safari need a slight delay to scroll correctly in edge cases
       }
     }
   })
@@ -159,14 +154,14 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
     if (!id) {
       return
     }
-    const currentIndex = steps.current.findIndex(
-      (ele) => ele.id === currentStep
-    )
-    const targetIndex = steps.current.findIndex((ele) => ele.id === id)
-    if (currentIndex === targetIndex || targetIndex === -1) {
-      return
-    }
     const exec = () => {
+      const currentIndex = steps.current.findIndex(
+        (ele) => ele.id === currentStep
+      )
+      const targetIndex = steps.current.findIndex((ele) => ele.id === id)
+      if (currentIndex === targetIndex) {
+        return
+      }
       if (currentIndex > targetIndex) {
         if (targetIndex === 0) {
           scrollFn(findStep(id)!, id)

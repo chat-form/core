@@ -1,0 +1,50 @@
+---
+subGroup: components
+title: SequenceCard
+---
+
+## SequenceCard
+
+### 何时使用
+
+SequenceCard 适合展示包含多个步骤的表单, 通常是一个有向无环图(DAG). 比如 [这幅图](https://lf3-static.bytednsdoc.com/obj/eden-cn/fvyaeh7pfuhpaps/dag.png)
+
+当切换到之前的步骤时, 晚于该步骤的结果需要被清理, 因为后续的节点可能因为前序结果的改变而发生变化。
+
+### Demo
+
+#### 配合 ChatGPT 使用
+
+<Demo src="docs/demo/SequenceCard/chatGpt.tsx" />
+
+这是一个示例的 prompt，也可以在此基础上将后续的问答结果继续传递给 API 以获取新的问题。
+
+```
+'你是一个电话接线员，请设计几个问题来收集一些信息，用来 {{Your intention here}}，构成一个有向无环图，直接以 JSON 的形式返回，不要其他文字，不要用 markdown 展示，示例如下：`[{"id":"flavour","question":"你喜欢的口味是什么？","answers":[{"name":"甜","key":"sweet","next":"sweet-food"},{"name":"咸","key":"salty","next":"salty-food"}]},{"id":"sweet-food","question":"你更喜欢以下哪种食物？","answers":[{"name":"可乐","key":"cola","next":"Q4"},{"name":"雪碧","key":"sprite","next":"Q4"}]},{"id":"salty-food","question":"你更喜欢以下哪种食物？","answers":[{"name":"包子","key":"Dim Sum","next":"Q5"},{"name":"披萨","key":"Pizza","next":"Q5"}]},{"id":"Thanks","question":"感谢您的回答！","answers":[]}]`'
+```
+
+#### 动态修改步骤
+
+<Demo src="docs/demo/SequenceCard/dynamicSteps.tsx" />
+
+#### 大数据量场景
+
+<Demo src="docs/demo/SequenceCard/stressTest.tsx" />
+
+### API
+
+#### SequenceCard Props
+
+<TsInfo src="src/components/SequenceCard/index.tsx" name="Props" />
+
+#### Step
+
+<TsInfo src="src/components/SequenceCard/index.tsx" name="Step" />
+
+#### RenderStep Ctx
+
+<TsInfo src="src/components/SequenceCard/index.tsx" name="Ctx" />
+
+#### Ref
+
+<TsInfo src="src/components/SequenceCard/index.tsx" name="ListRef" />

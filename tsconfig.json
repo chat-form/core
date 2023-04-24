@@ -18,7 +18,8 @@
     "esModuleInterop": true,
     "paths": {
       "@chat-form/core": ["src/index.tsx"],
-      "@chat-form/core/*": ["src/*"]
+      "@chat-form/core/*": ["src/*"],
+      "docs/*": ["docs/*"]
     }
   },
   "include": ["src/**/*", "docs/**/*", "test/**/*"]
