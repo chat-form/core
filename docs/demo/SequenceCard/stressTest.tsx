@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
-import { Radio, Space } from 'antd'
+import { Card, Radio, Space } from 'antd'
 import styles from './index.module.css'
 
 export default () => {
@@ -18,8 +18,7 @@ export default () => {
           id: `${key}`,
           renderStep: (ctx) =>
             ctx.isActive ? (
-              <div className={styles.card}>
-                <div>Question {key}:</div>
+              <Card title={`Question ${key}`}>
                 <Radio.Group
                   buttonStyle="solid"
                   className={styles.options}
@@ -39,20 +38,16 @@ export default () => {
                     })}
                   </Space>
                 </Radio.Group>
-              </div>
+              </Card>
             ) : (
-              <div className={styles.card}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>Question {key}:</div>
-                  <div onClick={() => ctx.gotoStep(`${key}`)}>Edit</div>
-                </div>
-                <div>Done</div>
-              </div>
+              <Card
+                title={`Question ${key}`}
+                extra={
+                  <div onClick={() => ctx.gotoStep(`${key}`, 48)}>Edit</div>
+                }
+              >
+                Done
+              </Card>
             ),
         }
       })}

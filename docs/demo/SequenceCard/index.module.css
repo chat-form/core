@@ -19,24 +19,3 @@
   width: 100%;
   text-align: center;
 }
-
-.card {
-  padding: 16px;
-  border-radius: 12px;
-  background-color: white;
-}
-
-.card > div:first-child {
-  margin-bottom: 16px;
-}
-
-.card .result {
-  border: 1px dashed #e8e8e8;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-}
-.card .result:hover {
-  border-color: #1677ff;
-  color: #1677ff;
-}

@@ -114,7 +114,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
 
   const step = useMemo(() => {
     return steps.current.find((ele) => ele.id === currentStep)
-  }, [currentStep, steps])
+  }, [currentStep, _steps])
 
   const findStep = useMemoizedFn((id?: string) => {
     if (!id) {
@@ -127,11 +127,17 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
   })
 
   /** ensure bottom distance to fully display current step */
-  const getDistanceBottom = useMemoizedFn(() => {
+  const getContainerHeight = useMemoizedFn(() => {
     const containerHeight = Math.min(
       containerDom.current?.clientHeight || window.innerHeight,
       window.innerHeight
     )
+    return containerHeight
+  })
+
+  /** ensure bottom distance to fully display current step */
+  const getDistanceBottom = useMemoizedFn(() => {
+    const containerHeight = getContainerHeight()
     const currentHeight = activeDom.current?.getBoundingClientRect().height || 0
     return Math.max(containerHeight - currentHeight, gap)
   })
@@ -159,7 +165,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
         (ele) => ele.id === currentStep
       )
       const targetIndex = steps.current.findIndex((ele) => ele.id === id)
-      if (currentIndex === targetIndex) {
+      if (currentIndex === targetIndex || targetIndex === -1) {
         return
       }
       if (currentIndex > targetIndex) {
@@ -167,6 +173,7 @@ export default forwardRef((props: Props, ref: Ref<ListRef>) => {
           scrollFn(findStep(id)!, id)
         }
         aboutToEditStep.current = id || ''
+        setDistanceBottom(getContainerHeight())
         setCurrentStep('')
         const index = prevSteps.findIndex((ele) => ele === id)
         setAboutToRemoveSteps([...prevSteps.filter((_, i) => i > index), id])

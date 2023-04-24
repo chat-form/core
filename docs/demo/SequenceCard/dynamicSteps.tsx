@@ -1,16 +1,17 @@
 /**
  * @title Dynamic Adding Steps
- * @description ref.gotoStep internally adding a slight delay, so after changing steps, you can call gotoStep with the latest step immediately
+ * @description After changing steps, you need to add a slight delay(or use flushSync) to make sure changed steps are loaded.
  */
 
 import React, { useRef } from 'react'
 import { SequenceCard } from '@chat-form/core'
 import type { ListRef } from '@chat-form/core/components/SequenceCard'
 import styles from './index.module.css'
-import { Button, Space, Radio, Form } from 'antd'
+import { Button, Space, Radio, Form, Card } from 'antd'
 import type { ad } from './mock/data'
 import Json from '../../components/Json'
 import FormValue from '../../components/FormValue'
+import { flushSync } from 'react-dom'
 
 export default () => {
   const [question, setQuestion] = React.useState<typeof ad>([])
@@ -18,21 +19,23 @@ export default () => {
   const [form] = Form.useForm()
 
   const pushRandomQuestion = () => {
-    const id = `${Date.now()}`
-    setQuestion((s) => [
-      ...s,
-      {
-        id,
-        question: `New Inserted Question ${id}`,
-        answers: [
-          {
-            name: 'yes',
-            key: 'yes',
-            next: '',
-          },
-        ],
-      },
-    ])
+    const id = `${question.length}`
+    flushSync(() => {
+      setQuestion((s) => [
+        ...s,
+        {
+          id,
+          question: `New Question ${id}`,
+          answers: [
+            {
+              name: 'yes',
+              key: 'yes',
+              next: '',
+            },
+          ],
+        },
+      ])
+    })
     return id
   }
 
@@ -43,7 +46,7 @@ export default () => {
           <Button
             onClick={() => {
               const id = pushRandomQuestion()
-              ref.current?.gotoStep(id, 48)
+              ref.current?.gotoStep(id)
             }}
           >
             Insert a step
@@ -57,8 +60,7 @@ export default () => {
               id: ele.id,
               renderStep: (ctx) => {
                 return ctx.isActive ? (
-                  <div className={styles.card}>
-                    <div>{ele.question}</div>
+                  <Card title={ele.question}>
                     <Form.Item noStyle name={ele.id}>
                       <Radio.Group
                         buttonStyle="solid"
@@ -71,7 +73,7 @@ export default () => {
                               <Radio.Button
                                 onClick={() => {
                                   const id = pushRandomQuestion()
-                                  ctx.gotoStep(id, 48)
+                                  ctx.gotoStep(id)
                                 }}
                                 key={i.key}
                                 value={i.key}
@@ -83,17 +85,18 @@ export default () => {
                         </Space>
                       </Radio.Group>
                     </Form.Item>
-                  </div>
+                  </Card>
                 ) : (
-                  <div className={styles.card}>
-                    <div>{ele.question}</div>
+                  <Card
+                    extra={<div onClick={() => ctx.gotoStep(ele.id)}>Edit</div>}
+                    title={ele.question}
+                  >
                     <Form.Item noStyle name={ele.id}>
                       <FormValue
                         formatter={(v) => (
                           <div
-                            className={styles.result}
                             onClick={() => {
-                              ctx.gotoStep(ele.id, 48)
+                              ctx.gotoStep(ele.id)
                             }}
                           >
                             {ele.answers.find((i) => i.key === v)?.name || '-'}
@@ -101,7 +104,7 @@ export default () => {
                         )}
                       />
                     </Form.Item>
-                  </div>
+                  </Card>
                 )
               },
             }

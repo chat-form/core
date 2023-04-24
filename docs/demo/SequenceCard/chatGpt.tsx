@@ -6,7 +6,7 @@
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
 import styles from './index.module.css'
-import { Input, Button, Space, Radio, Form } from 'antd'
+import { Input, Button, Space, Radio, Form, Card } from 'antd'
 import { ad } from './mock/data'
 import Json from '../../components/Json'
 import FormValue from '../../components/FormValue'
@@ -75,8 +75,7 @@ export default () => {
               id: ele.id,
               renderStep: (ctx) => {
                 return ctx.isActive ? (
-                  <div className={styles.card}>
-                    <div>{ele.question}</div>
+                  <Card title={ele.question}>
                     <Form.Item noStyle name={ele.id}>
                       <Radio.Group
                         buttonStyle="solid"
@@ -98,23 +97,24 @@ export default () => {
                         </Space>
                       </Radio.Group>
                     </Form.Item>
-                  </div>
+                  </Card>
                 ) : (
-                  <div className={styles.card}>
-                    <div>{ele.question}</div>
+                  <Card
+                    extra={
+                      <div onClick={() => ctx.gotoStep(ele.id, 48)}>Edit</div>
+                    }
+                    title={ele.question}
+                  >
                     <Form.Item noStyle name={ele.id}>
                       <FormValue
                         formatter={(v) => (
-                          <div
-                            className={styles.result}
-                            onClick={() => ctx.gotoStep(ele.id, 48)}
-                          >
+                          <div>
                             {ele.answers.find((i) => i.key === v)?.name}
                           </div>
                         )}
                       />
                     </Form.Item>
-                  </div>
+                  </Card>
                 )
               },
             }
