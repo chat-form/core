@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
-import type { ListRef } from '@chat-form/core/components/SequenceCard'
+import type { Ref } from '@chat-form/core/components/SequenceCard'
 import styles from './index.module.css'
 import { Spin, Form, Card, Button, Input, Select, Checkbox } from 'antd'
 import type { ad } from './mock/data'
@@ -17,7 +17,7 @@ export default () => {
     { id: '0', question: '0', answers: [] },
   ])
   const [loading, setLoading] = React.useState(false)
-  const ref = React.useRef<ListRef>(null)
+  const ref = React.useRef<Ref>(null)
   const [form] = Form.useForm()
 
   const onNext = async () => {

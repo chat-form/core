@@ -4,6 +4,8 @@ import './index.css'
 import 'antd/dist/reset.css'
 import { useThemeCtx } from 'vite-pages-theme-doc'
 
+const localeKey = '__DOC_LOCALE'
+
 const Wrapper: React.ComponentType<React.PropsWithChildren<unknown>> = ({
   children,
 }) => {
@@ -20,8 +22,15 @@ const Wrapper: React.ComponentType<React.PropsWithChildren<unknown>> = ({
   }, [locale])
 
   useEffect(() => {
-    if (locale && !isLocaleReady) {
-      navigate(`${locale.routePrefix}${location.pathname}`, {
+    if (isLocaleReady) {
+      localStorage.setItem(localeKey, locale?.lang || '')
+    }
+    if (!isLocaleReady) {
+      const current = localStorage.getItem(localeKey) || locale?.lang
+      const prefix =
+        Object.values(i18n?.locales || {}).find((i) => i.lang === current)
+          ?.routePrefix || ''
+      navigate(`${prefix}${location.pathname}`, {
         replace: true,
       })
     }

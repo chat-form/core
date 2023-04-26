@@ -5,7 +5,7 @@
 
 import React, { useRef } from 'react'
 import { SequenceCard } from '@chat-form/core'
-import type { ListRef } from '@chat-form/core/components/SequenceCard'
+import type { Ref } from '@chat-form/core/components/SequenceCard'
 import styles from './index.module.css'
 import { Button, Space, Radio, Form, Card } from 'antd'
 import type { ad } from './mock/data'
@@ -15,7 +15,7 @@ import { flushSync } from 'react-dom'
 
 export default () => {
   const [question, setQuestion] = React.useState<typeof ad>([])
-  const ref = useRef<ListRef | null>(null)
+  const ref = useRef<Ref | null>(null)
   const [form] = Form.useForm()
 
   const pushRandomQuestion = () => {
