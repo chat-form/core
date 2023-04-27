@@ -17,7 +17,7 @@ import { getBem } from '@chat-form/core/utils/classname'
 export interface Props {
   /** All available steps */
   steps: Step[]
-  /** Array of initial step keys
+  /** Array of initial step keys，the last one will be the currently active step
    *  @defaultValue []
    */
   initialSteps?: string[]
@@ -101,14 +101,7 @@ export default memo(
     const steps = useLatest(_steps)
     const [currentStep, setCurrentStep] = useState(() => {
       const lastKey = initialSteps[initialSteps.length - 1]
-      if (lastKey) {
-        return (
-          steps.current[
-            steps.current.findIndex((ele) => ele.id === lastKey) + 1
-          ]?.id ?? _steps?.[0]?.id
-        )
-      }
-      return _steps?.[0]?.id
+      return lastKey ?? _steps?.[0]?.id
     })
     const [prevSteps, setPrevSteps] = useState<string[]>(initialSteps)
     const [aboutToRemoveSteps, setAboutToRemoveSteps] = useState<string[]>([])

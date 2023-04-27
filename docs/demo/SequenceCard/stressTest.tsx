@@ -18,7 +18,7 @@ export default () => {
         onStepChange={(e, steps) => {
           const currentIndex = steps.findIndex((ele) => ele.id === e)
           setPercent(
-            Math.max(0, Math.round((currentIndex / steps.length) * 100))
+            Math.max(0, Math.floor((currentIndex / steps.length) * 100))
           )
         }}
         initialSteps={[...Array(500).keys()].map((k) => `${k}`)}
