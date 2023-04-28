@@ -19,4 +19,4 @@ import { SequenceCard } from '@chat-form/core'
 export default () => <SequenceCard steps={steps} />
 ```
 
-See more examples at [chat-form.io](/SequenceCard)
+See more examples at [chat-form.io](https://chat-form.io/SequenceCard)
