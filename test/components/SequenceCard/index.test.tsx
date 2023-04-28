@@ -16,9 +16,9 @@ describe('SequenceCard', () => {
   })
 
   it('initial steps', async () => {
-    const { container } = render(
+    render(
       <SequenceCard
-        initialSteps={[...Array(2).keys()].map((k) => `s${k}`)}
+        initialSteps={[...Array(3).keys()].map((k) => `s${k}`)}
         steps={[...Array(100).keys()].map((key) => {
           return {
             id: `s${key}`,
@@ -48,7 +48,7 @@ describe('SequenceCard', () => {
   it('goto next step', async () => {
     render(
       <SequenceCard
-        initialSteps={[...Array(10).keys()].map((k) => `s${k}`)}
+        initialSteps={[...Array(11).keys()].map((k) => `s${k}`)}
         steps={[...Array(100).keys()].map((key) => {
           return {
             id: `s${key}`,

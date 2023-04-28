@@ -103,7 +103,9 @@ export default memo(
       const lastKey = initialSteps[initialSteps.length - 1]
       return lastKey ?? _steps?.[0]?.id
     })
-    const [prevSteps, setPrevSteps] = useState<string[]>(initialSteps)
+    const [prevSteps, setPrevSteps] = useState<string[]>(
+      initialSteps.slice(0, -1)
+    )
     const [aboutToRemoveSteps, setAboutToRemoveSteps] = useState<string[]>([])
     const aboutToEditStep = useRef('')
     const [distanceBottom, setDistanceBottom] = useState(window.innerHeight)
