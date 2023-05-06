@@ -24,10 +24,7 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "classnames": "^2.3.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.10.0"
+    "classnames": "^2.3.2"
   },
   "devDependencies": {
     "@jest/globals": "^29.5.0",
@@ -41,6 +38,9 @@
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.10.0",
     "rimraf": "^4.4.1",
     "serve": "^14.2.0",
     "ts-jest": "^29.1.0",

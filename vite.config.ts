@@ -13,7 +13,6 @@ const libConfig = defineConfig({
       outputDir: 'dist',
     }),
     tsConfigPaths(),
-    react(),
     cssInjectedByJsPlugin(),
   ],
   build: {
