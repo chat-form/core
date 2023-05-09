@@ -9,10 +9,12 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { flushSync, unstable_batchedUpdates } from 'react-dom'
+import { unstable_batchedUpdates } from 'react-dom'
 import classnames from 'classnames'
 import './index.css'
-import { getBem } from '@chat-form/core/utils/classname'
+import { getBem } from '@chat-form/core/utils'
+import AnimationWrapper from './animationWrapper'
+import { debounce } from 'lodash-es'
 
 export interface Props {
   /** All available steps */
@@ -33,6 +35,10 @@ export interface Props {
    * @defaultValue 250
    */
   animationDuration?: number
+  /** Enable animation
+   * @defaultValue true
+   */
+  animation?: boolean
   /** Customize scroll function
    *  @defaultValue dom.scrollIntoView
    */
@@ -78,6 +84,10 @@ export interface Ref {
    * @param id step id
    */
   scrollToCard: (id?: string) => void
+  /**
+   * A map of step id to card dom
+   */
+  getCards: () => Record<string, HTMLDivElement | null>
 }
 
 const cs = getBem('sc')
@@ -87,13 +97,15 @@ export default memo(
     const {
       steps: _steps = [],
       initialSteps = [],
+      animation = true,
       animationDuration: _animationDuration = 250,
       animationOffsetRight = 200,
       gap = 16,
       containerClassName,
       containerStyle,
       onStepChange = () => {},
-      scrollFn: _scrollFn = (dom) => dom.scrollIntoView({ behavior: 'smooth' }),
+      scrollFn: _scrollFn = (dom) =>
+        dom.scrollIntoView({ behavior: animation ? 'smooth' : 'auto' }),
     } = props
     const containerDom = useRef<HTMLDivElement>(null)
     const cardDoms = useRef<Record<string, HTMLDivElement | null>>({})
@@ -157,9 +169,7 @@ export default memo(
       if (step) {
         const dom = findStep(id)
         if (dom) {
-          flushSync(() => {
-            setDistanceBottom(getDistanceBottom())
-          })
+          setDistanceBottom(getDistanceBottom())
           setTimeout(() => {
             scrollFn(dom, id ?? step.id)
           }, 16) // Safari need a slight delay to scroll correctly in edge cases
@@ -179,20 +189,33 @@ export default memo(
         if (currentIndex === targetIndex || targetIndex === -1) {
           return
         }
+        // goto step above
         if (currentIndex > targetIndex) {
           if (targetIndex === 0) {
             scrollFn(findStep(id)!, id)
           }
+
+          if (!animation) {
+            const index = prevSteps.findIndex((ele) => ele === id)
+            setPrevSteps(prevSteps.filter((_, i) => i < index))
+            setCurrentStep(id)
+            setDistanceBottom(getDistanceBottom())
+            scrollToCard(id)
+            return
+          }
+
           aboutToEditStep.current = id || ''
           setDistanceBottom(getContainerHeight())
           setCurrentStep('')
           const index = prevSteps.findIndex((ele) => ele === id)
           setAboutToRemoveSteps([...prevSteps.filter((_, i) => i > index), id])
-        } else {
-          setCurrentStep(id)
-          if (step) {
-            setPrevSteps((s) => [...s, step.id])
-          }
+          return
+        }
+
+        // goto step below
+        setCurrentStep(id)
+        if (step) {
+          setPrevSteps((s) => [...s, step.id])
         }
       }
       setTimeout(exec, delay)
@@ -204,9 +227,13 @@ export default memo(
         return {
           gotoStep,
           scrollToCard,
+          getCards: () => ({
+            ...cardDoms.current,
+            [step?.id!]: activeDom.current,
+          }),
         }
       },
-      [gotoStep, scrollToCard]
+      [gotoStep, scrollToCard, step]
     )
 
     const removeAnimate = useMemo(
@@ -218,6 +245,18 @@ export default memo(
       }),
       [prevSteps, aboutToRemoveSteps, animationDuration]
     )
+
+    const Card = useMemo(() => {
+      return memo(({ isActive, id }: { isActive: boolean; id: string }) => {
+        return (
+          <>
+            {steps.current
+              .find((ele) => ele.id === id)
+              ?.renderStep({ gotoStep, scrollToCard, isActive })}
+          </>
+        )
+      })
+    }, [])
 
     return (
       <div
@@ -242,12 +281,9 @@ export default memo(
               key={prevStep?.id}
               className={cs('card-wrapper')}
             >
-              <div
+              <AnimationWrapper
                 style={{
-                  transform: `translateX(${
-                    isAboutToRemove ? `${animationOffsetRight}px` : 0
-                  })`,
-                  transitionDelay: `${Math.min(
+                  animationDelay: `${Math.min(
                     Math.max(
                       removeAnimate.delay * (index - removeAnimate.index),
                       0
@@ -255,27 +291,35 @@ export default memo(
                     animationDuration
                   )}ms`,
                 }}
-                className={cs('card')}
-                onTransitionEnd={() => {
-                  unstable_batchedUpdates(() => {
-                    setPrevSteps((s) => {
-                      const needKeep = (id: string) =>
-                        !aboutToRemoveSteps.includes(id)
-                      const stepsLeft = s.filter(needKeep)
-                      setAboutToRemoveSteps([])
-                      return stepsLeft
-                    })
-                    setCurrentStep(aboutToEditStep.current)
-                  })
-                }}
+                className={classnames(
+                  cs('card'),
+                  isAboutToRemove && animation && cs('fadeOut')
+                )}
+                animation={animation}
+                onAnimationEnd={debounce(
+                  () => {
+                    if (isAboutToRemove) {
+                      unstable_batchedUpdates(() => {
+                        setPrevSteps((s) => {
+                          const needKeep = (id: string) =>
+                            !aboutToRemoveSteps.includes(id)
+                          const stepsLeft = s.filter(needKeep)
+                          return stepsLeft
+                        })
+                        setAboutToRemoveSteps([])
+                        setCurrentStep(aboutToEditStep.current)
+                      })
+                    }
+                  },
+                  animationDuration,
+                  {
+                    leading: true,
+                  }
+                )}
                 key={prevStep.id}
               >
-                {prevStep?.renderStep({
-                  gotoStep,
-                  scrollToCard,
-                  isActive: false,
-                })}
-              </div>
+                <Card isActive={false} id={prevStep.id} />
+              </AnimationWrapper>
             </div>
           )
         })}
@@ -284,20 +328,23 @@ export default memo(
           ref={activeDom}
           className={classnames(cs('card-wrapper'), cs('active'))}
         >
-          <div
-            onAnimationEnd={() => {
-              scrollToCard()
-            }}
+          <AnimationWrapper
+            animation={animation}
+            onAnimationEnd={debounce(
+              () => {
+                scrollToCard()
+              },
+              animationDuration,
+              { leading: false }
+            )}
             style={{
               opacity: step ? 1 : 0,
               marginBottom: distanceBottom,
             }}
-            className={classnames(cs('fadeIn'), cs('card'))}
+            className={classnames(animation && cs('fadeIn'), cs('card'))}
           >
-            <div>
-              {step?.renderStep?.({ gotoStep, scrollToCard, isActive: true })}
-            </div>
-          </div>
+            <Card isActive={true} id={step?.id!} />
+          </AnimationWrapper>
         </div>
       </div>
     )

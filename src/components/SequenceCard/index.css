@@ -12,12 +12,20 @@
 .cf-sc-card {
   position: relative;
   box-sizing: border-box;
-  transition: transform var(--animation-duration) ease-in-out;
 }
 
 .cf-sc-fadeIn {
-  animation: cf-sc-slide-in var(--animation-duration) ease-in-out;
-  display: grid;
+  animation-name: cf-sc-slide-in;
+  animation-duration: var(--animation-duration);
+  animation-timing-function: ease-in-out;
+}
+
+.cf-sc-fadeOut {
+  animation-name: cf-sc-slide-in;
+  animation-duration: var(--animation-duration);
+  animation-timing-function: ease-in-out;
+  animation-direction: alternate-reverse;
+  transform: translateX(var(--scroll-animation-offset-right));
 }
 
 @keyframes cf-sc-slide-in {

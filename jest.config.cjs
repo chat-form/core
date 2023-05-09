@@ -20,6 +20,7 @@ module.exports = {
   },
   testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+  transformIgnorePatterns: ['node_modules/(?!(lodash-es)/)'],
   moduleNameMapper: {
     '^.+\\.(jpg|jpeg|png|gif|svg)(\\?as=url)?$':
       '<rootDir>/test/utils/svg-transform.js',
