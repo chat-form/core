@@ -92,7 +92,7 @@ export interface Ref {
 
 const cs = getBem('sc')
 
-export default memo(
+export const SequenceCard = memo(
   forwardRef((props: Props, ref: ReactRef<Ref>) => {
     const {
       steps: _steps = [],

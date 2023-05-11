@@ -2,6 +2,8 @@ const { join } = require('path')
 const { pathsToModuleNameMapper } = require('ts-jest')
 const { compilerOptions } = require('./tsconfig.json')
 
+const esmModules = ['lodash-es']
+
 module.exports = {
   preset: 'ts-jest',
   rootDir: join(__dirname, './'),
@@ -20,7 +22,9 @@ module.exports = {
   },
   testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  transformIgnorePatterns: ['node_modules/(?!(lodash-es)/)'],
+  transformIgnorePatterns: [
+    `node_modules/(?!(?:.pnpm/)?(${esmModules.join('|')}))`,
+  ],
   moduleNameMapper: {
     '^.+\\.(jpg|jpeg|png|gif|svg)(\\?as=url)?$':
       '<rootDir>/test/utils/svg-transform.js',
