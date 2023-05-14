@@ -5,7 +5,7 @@
 
 import React from 'react'
 import { SequenceCard } from '@chat-form/core'
-import { Button, Card, Progress, Radio, Space } from 'antd'
+import { Button, Card, Radio } from 'antd'
 import styles from './index.module.css'
 
 export default () => {
@@ -14,7 +14,6 @@ export default () => {
       <SequenceCard
         containerClassName={styles.demo}
         initialSteps={[...Array(5).keys()].map((k) => `${k}`)}
-        animation={false}
         steps={[...Array(20).keys()].map((key, index) => {
           return {
             id: `${key}`,

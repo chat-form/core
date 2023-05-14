@@ -5,34 +5,7 @@
   position: relative;
 }
 
-.cf-sc-card-wrapper {
-  padding-top: var(--scroll-animation-offset-top);
-}
-
 .cf-sc-card {
   position: relative;
   box-sizing: border-box;
-}
-
-.cf-sc-fadeIn {
-  animation-name: cf-sc-slide-in;
-  animation-duration: var(--animation-duration);
-  animation-timing-function: ease-in-out;
-}
-
-.cf-sc-fadeOut {
-  animation-name: cf-sc-slide-in;
-  animation-duration: var(--animation-duration);
-  animation-timing-function: ease-in-out;
-  animation-direction: alternate-reverse;
-  transform: translateX(var(--scroll-animation-offset-right));
-}
-
-@keyframes cf-sc-slide-in {
-  from {
-    transform: translateX(var(--scroll-animation-offset-right));
-  }
-  to {
-    transform: translateX(0);
-  }
 }

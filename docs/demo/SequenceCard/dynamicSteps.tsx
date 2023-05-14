@@ -5,6 +5,7 @@
 
 import React, { useRef } from 'react'
 import { SequenceCard } from '@chat-form/core'
+import { slideIn } from '@chat-form/core/animations/slideIn'
 import type { Ref } from '@chat-form/core/components/SequenceCard'
 import styles from './index.module.css'
 import { Button, Space, Radio, Form, Card } from 'antd'
@@ -109,6 +110,7 @@ export default () => {
               },
             }
           })}
+          {...slideIn(250)}
           scrollFn={(dom) => {
             const sibling = dom.previousSibling as HTMLElement
             if (sibling) {

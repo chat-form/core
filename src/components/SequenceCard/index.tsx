@@ -1,52 +1,57 @@
-import { useMemoizedFn, useLatest } from '@chat-form/core/hooks'
+import {
+  useMemoizedFn,
+  useLatest,
+  useCallbackState,
+} from '@chat-form/core/hooks'
+import useSize from '@chat-form/core/hooks/useSize'
+import { getBem } from '@chat-form/core/utils'
+import classNames from 'classnames'
+import { noop } from 'lodash-es'
 import React, {
   forwardRef,
   memo,
   Ref as ReactRef,
-  useEffect,
   useImperativeHandle,
-  useMemo,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
-import classnames from 'classnames'
 import './index.css'
-import { getBem } from '@chat-form/core/utils'
-import AnimationWrapper from './animationWrapper'
-import { debounce } from 'lodash-es'
 
-export interface Props {
+const asyncNoop = () => Promise.resolve()
+
+export interface Props<ExtraCtx extends Record<any, any> = {}> {
+  /** extra ctx that render function need to response to
+   *  @defaultValue {}
+   */
+  extraCtx?: ExtraCtx
   /** All available steps */
-  steps: Step[]
+  steps: Step<ExtraCtx>[]
   /** Array of initial step keys，the last one will be the currently active step
    *  @defaultValue []
    */
   initialSteps?: string[]
-  /** Slide in / slide out distance in px
-   *  @defaultValue 200
-   */
-  animationOffsetRight?: number
   /** Card gap in px, the gap will be preserved after each scroll
    * @defaultValue 16
    */
   gap?: number
-  /** Animation time in ms
-   * @defaultValue 250
-   */
-  animationDuration?: number
-  /** Enable animation
-   * @defaultValue true
-   */
-  animation?: boolean
   /** Customize scroll function
    *  @defaultValue dom.scrollIntoView
    */
   scrollFn?: (dom: HTMLDivElement, id: string) => void
+  /** Customize enter animate function
+   *  @defaultValue opacity 0 - 1 linear
+   */
+  enterAnimateFn?: (dom: HTMLDivElement, id: string) => Promise<void> | void
+  /** Customize exit animate function
+   *  @defaultValue opacity 1 - 0 linear
+   */
+  exitAnimateFn?: (dom: HTMLDivElement, id: string) => Promise<void> | void
   /** step change callback
    *  @defaultValue noop
    */
-  onStepChange?: (key: string, steps: Step[]) => void
+  onStepChange?: (key: string, steps: Step<ExtraCtx>[]) => void
   /** Container class name */
   containerClassName?: string
   /** Container style */
@@ -56,22 +61,22 @@ export interface Props {
 export interface Ctx {
   /** Whether the current step is active */
   isActive: boolean
+  /** Whether the current step is about to enter and start entering animation */
+  isAboutToEnter: boolean
+  /** Whether the current step is about to enter and start leaving animation */
+  isAboutToExit: boolean
   /** Navigate to a specific step
    * @param id step id
    * @param delay animation delay in ms
    */
   gotoStep: (id: string, delay?: number) => void
-  /** Scroll to a specific step, this action will not toggle active state
-   * @param id step id
-   */
-  scrollToCard: (id?: string) => void
 }
 
-export interface Step {
+export interface Step<T extends Record<any, any> = Record<any, any>> {
   /** Unique key of the step */
   id: string
   /** Render function of the step */
-  renderStep: (ctx: Ctx) => React.ReactNode
+  renderStep: (ctx: Ctx & T) => React.ReactNode
 }
 
 export interface Ref {
@@ -83,270 +88,252 @@ export interface Ref {
   /** Scroll to a specific step, this action will not toggle active state
    * @param id step id
    */
-  scrollToCard: (id?: string) => void
+  scrollToStep: (id?: string) => void
   /**
    * A map of step id to card dom
    */
   getCards: () => Record<string, HTMLDivElement | null>
 }
 
+type SequenceCard<T extends Object = {}> = React.MemoExoticComponent<
+  React.ForwardRefExoticComponent<Props<T> & React.RefAttributes<Ref>>
+>
+
 const cs = getBem('sc')
 
-export const SequenceCard = memo(
-  forwardRef((props: Props, ref: ReactRef<Ref>) => {
-    const {
-      steps: _steps = [],
-      initialSteps = [],
-      animation = true,
-      animationDuration: _animationDuration = 250,
-      animationOffsetRight = 200,
-      gap = 16,
-      containerClassName,
-      containerStyle,
-      onStepChange = () => {},
-      scrollFn: _scrollFn = (dom) =>
-        dom.scrollIntoView({ behavior: animation ? 'smooth' : 'auto' }),
-    } = props
-    const containerDom = useRef<HTMLDivElement>(null)
-    const cardDoms = useRef<Record<string, HTMLDivElement | null>>({})
-    const activeDom = useRef<HTMLDivElement>(null)
-    const steps = useLatest(_steps)
-    const [currentStep, setCurrentStep] = useState(() => {
-      const lastKey = initialSteps[initialSteps.length - 1]
-      return lastKey ?? _steps?.[0]?.id
-    })
-    const [prevSteps, setPrevSteps] = useState<string[]>(
-      initialSteps.slice(0, -1)
-    )
-    const [aboutToRemoveSteps, setAboutToRemoveSteps] = useState<string[]>([])
-    const aboutToEditStep = useRef('')
-    const [distanceBottom, setDistanceBottom] = useState(window.innerHeight)
-    // set a minimum animation duration currently
-    const animationDuration = useMemo(
-      () => Math.max(_animationDuration, 48),
-      [_animationDuration]
-    )
-    const scrollFn = useMemoizedFn(_scrollFn)
+const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
+  const {
+    gap = 16,
+    initialSteps,
+    steps: _steps = [],
+    extraCtx = {},
+    scrollFn = (dom) => {
+      dom.scrollIntoView({ behavior: 'auto' })
+    },
+    enterAnimateFn = asyncNoop,
+    exitAnimateFn = asyncNoop,
+  } = props
 
-    const step = useMemo(() => {
-      return steps.current.find((ele) => ele.id === currentStep)
-    }, [currentStep, _steps])
-
-    useEffect(() => {
-      if (currentStep) {
-        onStepChange(currentStep, _steps)
-      }
-    }, [currentStep])
-
-    const findStep = useMemoizedFn((id?: string) => {
-      if (!id) {
-        return activeDom.current
-      }
-      const index = prevSteps.findIndex((ele) => ele === id)
-      const prevStep =
-        index > -1 ? prevSteps[index] : prevSteps[prevSteps.length - 1]
-      return cardDoms.current[prevStep]
-    })
-
-    /** ensure bottom distance to fully display current step */
-    const getContainerHeight = useMemoizedFn(() => {
-      const containerHeight = Math.min(
-        containerDom.current?.clientHeight || window.innerHeight,
-        window.innerHeight
-      )
-      return containerHeight
-    })
-
-    /** ensure bottom distance to fully display current step */
-    const getDistanceBottom = useMemoizedFn(() => {
-      const containerHeight = getContainerHeight()
-      const currentHeight =
-        activeDom.current?.getBoundingClientRect().height || 0
-      return Math.max(containerHeight - currentHeight, gap)
-    })
-
-    const scrollToCard = useMemoizedFn((id?: string) => {
-      if (step) {
-        const dom = findStep(id)
-        if (dom) {
-          setDistanceBottom(getDistanceBottom())
-          setTimeout(() => {
-            scrollFn(dom, id ?? step.id)
-          }, 16) // Safari need a slight delay to scroll correctly in edge cases
-        }
-      }
-    })
-
-    const gotoStep = useMemoizedFn((id: string, delay = 0) => {
-      if (!id) {
-        return
-      }
-      const exec = () => {
-        const currentIndex = steps.current.findIndex(
-          (ele) => ele.id === currentStep
-        )
-        const targetIndex = steps.current.findIndex((ele) => ele.id === id)
-        if (currentIndex === targetIndex || targetIndex === -1) {
-          return
-        }
-        // goto step above
-        if (currentIndex > targetIndex) {
-          if (targetIndex === 0) {
-            scrollFn(findStep(id)!, id)
-          }
-
-          if (!animation) {
-            const index = prevSteps.findIndex((ele) => ele === id)
-            setPrevSteps(prevSteps.filter((_, i) => i < index))
-            setCurrentStep(id)
-            setDistanceBottom(getDistanceBottom())
-            scrollToCard(id)
-            return
-          }
-
-          aboutToEditStep.current = id || ''
-          setDistanceBottom(getContainerHeight())
-          setCurrentStep('')
-          const index = prevSteps.findIndex((ele) => ele === id)
-          setAboutToRemoveSteps([...prevSteps.filter((_, i) => i > index), id])
-          return
-        }
-
-        // goto step below
-        setCurrentStep(id)
-        if (step) {
-          setPrevSteps((s) => [...s, step.id])
-        }
-      }
-      setTimeout(exec, delay)
-    })
-
-    useImperativeHandle(
-      ref,
-      () => {
-        return {
-          gotoStep,
-          scrollToCard,
-          getCards: () => ({
-            ...cardDoms.current,
-            [step?.id!]: activeDom.current,
-          }),
-        }
-      },
-      [gotoStep, scrollToCard, step]
-    )
-
-    const removeAnimate = useMemo(
-      () => ({
-        index: prevSteps.indexOf(
-          aboutToRemoveSteps[aboutToRemoveSteps.length - 1] || ''
-        ),
-        delay: animationDuration / aboutToRemoveSteps.length,
-      }),
-      [prevSteps, aboutToRemoveSteps, animationDuration]
-    )
-
-    const Card = useMemo(() => {
-      return memo(({ isActive, id }: { isActive: boolean; id: string }) => {
-        return (
-          <>
-            {steps.current
-              .find((ele) => ele.id === id)
-              ?.renderStep({ gotoStep, scrollToCard, isActive })}
-          </>
-        )
-      })
-    }, [])
-
+  const stepDoms = useRef<Record<string, HTMLDivElement | null>>({})
+  const containerDom = useRef<HTMLDivElement>(null)
+  const allSteps = useLatest(_steps)
+  const [aboutToEnter, setAboutToEnter] = useCallbackState<Step[]>([])
+  const [aboutToExit, setAboutToExit] = useCallbackState<Step[]>([])
+  const [steps, setSteps] = useState<Step[]>(() => {
     return (
-      <div
-        ref={containerDom}
-        className={classnames(cs('container'), containerClassName)}
-        style={{
-          '--scroll-animation-offset-top': `${gap}px`,
-          '--scroll-animation-offset-right': `${animationOffsetRight}px`,
-          '--animation-duration': `${animationDuration}ms`,
-          ...containerStyle,
-        }}
-      >
-        {prevSteps.map((ele, index) => {
-          const prevStep = steps.current.find((i) => i.id === ele)
-          if (!prevStep) {
-            return null
-          }
-          const isAboutToRemove = aboutToRemoveSteps.includes(prevStep.id)
-          return (
-            <div
-              ref={(r) => (cardDoms.current[prevStep.id] = r)}
-              key={prevStep?.id}
-              className={cs('card-wrapper')}
-            >
-              <AnimationWrapper
-                style={{
-                  animationDelay: `${Math.min(
-                    Math.max(
-                      removeAnimate.delay * (index - removeAnimate.index),
-                      0
-                    ),
-                    animationDuration
-                  )}ms`,
-                }}
-                className={classnames(
-                  cs('card'),
-                  isAboutToRemove && animation && cs('fadeOut')
-                )}
-                animation={animation}
-                onAnimationEnd={debounce(
-                  () => {
-                    if (isAboutToRemove) {
-                      unstable_batchedUpdates(() => {
-                        setPrevSteps((s) => {
-                          const needKeep = (id: string) =>
-                            !aboutToRemoveSteps.includes(id)
-                          const stepsLeft = s.filter(needKeep)
-                          return stepsLeft
-                        })
-                        setAboutToRemoveSteps([])
-                        setCurrentStep(aboutToEditStep.current)
-                      })
-                    }
-                  },
-                  animationDuration,
-                  {
-                    leading: true,
-                  }
-                )}
-                key={prevStep.id}
-              >
-                <Card isActive={false} id={prevStep.id} />
-              </AnimationWrapper>
-            </div>
-          )
-        })}
-        <div
-          key={step?.id}
-          ref={activeDom}
-          className={classnames(cs('card-wrapper'), cs('active'))}
-        >
-          <AnimationWrapper
-            animation={animation}
-            onAnimationEnd={debounce(
-              () => {
-                scrollToCard()
-              },
-              animationDuration,
-              { leading: false }
-            )}
-            style={{
-              opacity: step ? 1 : 0,
-              marginBottom: distanceBottom,
-            }}
-            className={classnames(animation && cs('fadeIn'), cs('card'))}
-          >
-            <Card isActive={true} id={step?.id!} />
-          </AnimationWrapper>
-        </div>
-      </div>
-    )
+      initialSteps
+        ? allSteps.current.filter((ele) => initialSteps?.includes(ele.id))
+        : [allSteps.current[0]]
+    ).filter(Boolean)
   })
-)
+  const afterEnterCallback = useRef(asyncNoop)
+  const afterExitCallback = useRef(asyncNoop)
+  const navigateDirection = useRef<'forward' | 'backward'>('forward')
+
+  const getLastActiveStep = useMemoizedFn(() => {
+    const aboutToExitIds = aboutToExit.map((ele) => ele.id)
+    const last = steps
+      .filter((ele) => !aboutToExitIds.includes(ele.id))
+      .slice(-1)[0]
+
+    return last
+  })
+
+  const { height: activeStepHeight = 0 } =
+    useSize(() => {
+      return stepDoms.current?.[getLastActiveStep()?.id!]
+    }) || {}
+
+  const scrollToStep = useMemoizedFn((id?: string) => {
+    const last = getLastActiveStep()
+    const scrollToId = id ?? last.id
+
+    if (last) {
+      if (stepDoms.current[scrollToId]) {
+        scrollFn(stepDoms.current[scrollToId]!, scrollToId)
+      }
+    }
+  })
+
+  // enter animation
+  useLayoutEffect(() => {
+    if (aboutToEnter && aboutToEnter.length) {
+      Promise.all(
+        aboutToEnter.map(async (ele) => {
+          const dom = stepDoms.current[ele.id]
+          if (dom) {
+            await enterAnimateFn(dom, ele.id)
+            const animations = stepDoms.current[ele.id]?.getAnimations()
+            await Promise.all((animations || []).map((ele) => ele.finished))
+            animations?.forEach((ele) => {
+              ele.commitStyles()
+              ele.cancel()
+            })
+            await afterEnterCallback.current()
+            return true
+          }
+        })
+      ).finally(() => {
+        scrollToStep()
+      })
+    }
+  }, [aboutToEnter])
+
+  // leaving animation
+  useLayoutEffect(() => {
+    if (aboutToExit && aboutToExit.length) {
+      Promise.all(
+        aboutToExit.map(async (ele) => {
+          const dom = stepDoms.current[ele.id]
+          if (dom) {
+            await exitAnimateFn(dom, ele.id)
+            const animations = stepDoms.current[ele.id]?.getAnimations()
+            await Promise.all((animations || []).map((ele) => ele.finished))
+            animations?.forEach((ele) => {
+              ele.commitStyles()
+              ele.cancel()
+            })
+          }
+          return true
+        })
+      ).finally(() => {
+        afterExitCallback.current()
+        scrollToStep()
+      })
+    }
+  }, [aboutToExit])
+
+  const gotoStep = useMemoizedFn(async (id: string, delay = 0) => {
+    await new Promise((res) => setTimeout(res, delay))
+    const targetIndex = allSteps.current.findIndex((ele) => ele.id === id)
+    const lastIndex = allSteps.current.findIndex(
+      (ele) => ele.id === steps[steps.length - 1]?.id
+    )
+
+    if (targetIndex !== -1) {
+      // move forward
+      if (targetIndex > lastIndex) {
+        navigateDirection.current = 'forward'
+        afterEnterCallback.current()
+        unstable_batchedUpdates(() => {
+          setAboutToEnter([allSteps.current[targetIndex]])
+          setSteps((s) => [...s, allSteps.current[targetIndex]])
+        })
+        afterEnterCallback.current = async () => {
+          afterEnterCallback.current = asyncNoop
+          await new Promise<any>((res) => {
+            setAboutToEnter([], res)
+          })
+        }
+      } else {
+        // move backward
+        navigateDirection.current = 'backward'
+        afterExitCallback.current()
+        unstable_batchedUpdates(() => {
+          const nextAboutToExit = allSteps.current
+            .filter((_, index) => index > targetIndex)
+            .filter((ele) => steps.find((step) => step.id === ele.id))
+
+          setAboutToExit(nextAboutToExit)
+        })
+
+        afterExitCallback.current = async () => {
+          afterExitCallback.current = asyncNoop
+          return new Promise<any>((res) => {
+            unstable_batchedUpdates(() => {
+              setSteps((s) =>
+                s.filter((_) => {
+                  const index = allSteps.current.findIndex((e) => e.id === _.id)
+                  return index !== -1 && index <= targetIndex
+                })
+              )
+              setAboutToExit([], res)
+            })
+          })
+        }
+      }
+    }
+  })
+
+  /** ensure bottom distance to fully display current step */
+  const getContainerHeight = useMemoizedFn(() => {
+    const containerHeight = Math.min(
+      containerDom.current?.clientHeight || window.innerHeight,
+      window.innerHeight
+    )
+    return containerHeight
+  })
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      gotoStep,
+      scrollToStep,
+      getCards: () => stepDoms.current,
+    }),
+    []
+  )
+
+  return (
+    <div
+      style={props.containerStyle}
+      ref={containerDom}
+      className={classNames(cs('container'), props.containerClassName)}
+    >
+      {steps.map((step, index, arr) => {
+        const isLast = index === arr.length - 1
+        const isAboutToEnter = !!aboutToEnter.find((ele) => ele.id === step.id)
+        const isAboutToExit = !!aboutToExit.find((ele) => ele.id === step.id)
+        const isAboutToChange =
+          navigateDirection.current === 'forward'
+            ? index === arr.length - 2
+            : index === arr.length - aboutToExit.length - 1
+
+        return (
+          <div
+            ref={(r) => {
+              if (r) {
+                stepDoms.current[step.id] = r
+              }
+            }}
+            key={step.id}
+            className={classNames(
+              cs('card-wrapper'),
+              isAboutToEnter && 'entering',
+              isAboutToExit && 'leaving',
+              isAboutToChange && 'changing'
+            )}
+          >
+            <div
+              className={cs('card')}
+              style={{
+                paddingTop: gap,
+              }}
+            >
+              {step.renderStep({
+                isAboutToEnter,
+                isAboutToExit,
+                isAboutToChange,
+                isActive: isLast,
+                gotoStep,
+                ...extraCtx,
+              })}
+            </div>
+          </div>
+        )
+      })}
+      <div
+        style={{
+          height: Math.max(getContainerHeight() - activeStepHeight, gap),
+        }}
+      />
+    </div>
+  )
+}) as SequenceCard<{}>
+
+// TODO: find a better way to type this
+export const SequenceCard = memo(_SequenceCard) as <
+  ExtraCtx extends Record<any, any> = {}
+>(
+  ...args: Parameters<SequenceCard<ExtraCtx>>
+) => ReturnType<SequenceCard<ExtraCtx>>
