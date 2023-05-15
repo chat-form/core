@@ -6,11 +6,11 @@ import {
 import useSize from '@chat-form/core/hooks/useSize'
 import { getBem } from '@chat-form/core/utils'
 import classNames from 'classnames'
-import { noop } from 'lodash-es'
 import React, {
   forwardRef,
   memo,
   Ref as ReactRef,
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
@@ -105,6 +105,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
   const {
     gap = 16,
     initialSteps,
+    onStepChange = asyncNoop,
     steps: _steps = [],
     extraCtx = {},
     scrollFn = (dom) => {
@@ -203,6 +204,14 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
     }
   }, [aboutToExit])
 
+  useEffect(() => {
+    const initialActive = getLastActiveStep()?.id
+    if (initialActive) {
+      scrollToStep(initialActive)
+      onStepChange(initialActive, allSteps.current)
+    }
+  }, [])
+
   const gotoStep = useMemoizedFn(async (id: string, delay = 0) => {
     await new Promise((res) => setTimeout(res, delay))
     const targetIndex = allSteps.current.findIndex((ele) => ele.id === id)
@@ -217,7 +226,11 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
         afterEnterCallback.current()
         unstable_batchedUpdates(() => {
           setAboutToEnter([allSteps.current[targetIndex]])
-          setSteps((s) => [...s, allSteps.current[targetIndex]])
+          setSteps((s) => {
+            const next = [...s, allSteps.current[targetIndex]]
+            return next
+          })
+          onStepChange(id, allSteps.current)
         })
         afterEnterCallback.current = async () => {
           afterEnterCallback.current = asyncNoop
@@ -241,13 +254,15 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
           afterExitCallback.current = asyncNoop
           return new Promise<any>((res) => {
             unstable_batchedUpdates(() => {
-              setSteps((s) =>
-                s.filter((_) => {
+              setSteps((s) => {
+                const next = s.filter((_) => {
                   const index = allSteps.current.findIndex((e) => e.id === _.id)
                   return index !== -1 && index <= targetIndex
                 })
-              )
+                return next
+              })
               setAboutToExit([], res)
+              onStepChange(id, allSteps.current)
             })
           })
         }

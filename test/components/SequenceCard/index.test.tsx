@@ -1,11 +1,13 @@
 import React, { RefObject } from 'react'
 import { SequenceCard } from '@chat-form/core'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { Ref } from '@chat-form/core/components/SequenceCard'
 
 const getStep = async (step: number, active: boolean) => {
   return await screen.findByText(`${step}-${active ? 'active' : 'inActive'}`)
 }
+
+const scrollFn = jest.fn()
 
 describe('SequenceCard', () => {
   beforeAll(() => {
@@ -39,11 +41,13 @@ describe('SequenceCard', () => {
               ),
           }
         })}
+        scrollFn={scrollFn}
       />
     )
     expect(await getStep(0, false)).toBeInTheDocument()
     expect(await getStep(1, false)).toBeInTheDocument()
     expect(await getStep(2, true)).toBeInTheDocument()
+    expect(scrollFn).toHaveBeenLastCalledWith(expect.anything(), 's2')
   })
 
   it('goto next step', async () => {
@@ -72,14 +76,17 @@ describe('SequenceCard', () => {
               ),
           }
         })}
+        scrollFn={scrollFn}
       />
     )
     const step10Active = await getStep(10, true)
+    expect(scrollFn).toHaveBeenLastCalledWith(expect.anything(), 's10')
     const step9InActive = await getStep(9, false)
     expect(step10Active).toBeInTheDocument()
     expect(step9InActive).toBeInTheDocument()
     step10Active.click()
     const step11Active = await getStep(11, true)
+    expect(scrollFn).toHaveBeenLastCalledWith(expect.anything(), 's11')
     expect(step11Active).toBeInTheDocument()
     expect(await getStep(10, false)).toBeInTheDocument()
     const doms = ref.current?.getCards?.()
