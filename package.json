@@ -1,6 +1,6 @@
 {
   "name": "@chat-form/core",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "scripts": {
     "dev": "BUILD_TYPE=doc vite serve",
     "test": "jest",
