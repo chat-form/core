@@ -33,14 +33,15 @@ export default () => {
   return (
     <Form form={form}>
       <div style={{ overflow: 'auto' }}>
-        <SequenceCard
+        <SequenceCard<{ loading: boolean }>
           ref={ref}
+          extraCtx={{ loading }}
           containerClassName={styles.demo}
           steps={steps.map((i, index) => ({
             id: i.id,
             renderStep: (ctx) =>
               ctx.isActive ? (
-                <Spin spinning={loading && ctx.isActive}>
+                <Spin spinning={ctx.loading && ctx.isActive}>
                   <Card title={`Question ${i.question}:`}>
                     <Form.Item noStyle name={`Q${i.id}`}>
                       {index % 3 === 0 && <Input />}
