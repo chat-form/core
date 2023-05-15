@@ -93,6 +93,10 @@ export interface Ref {
    * A map of step id to card dom
    */
   getCards: () => Record<string, HTMLDivElement | null>
+  /**
+   * greatly increase distance bottom to prevent scroll position blinking when active step height changes
+   */
+  unstable_lockHeightBounceForAShortTime: () => void
 }
 
 type SequenceCard<T extends Object = {}> = React.MemoExoticComponent<
@@ -117,6 +121,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
 
   const stepDoms = useRef<Record<string, HTMLDivElement | null>>({})
   const containerDom = useRef<HTMLDivElement>(null)
+  const distanceDom = useRef<HTMLDivElement>(null)
   const allSteps = useLatest(_steps)
   const [aboutToEnter, setAboutToEnter] = useCallbackState<Step[]>([])
   const [aboutToExit, setAboutToExit] = useCallbackState<Step[]>([])
@@ -285,6 +290,16 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
       gotoStep,
       scrollToStep,
       getCards: () => stepDoms.current,
+      unstable_lockHeightBounceForAShortTime: () => {
+        if (distanceDom.current) {
+          distanceDom.current.style.marginBottom = '99999999px'
+          setTimeout(() => {
+            if (distanceDom.current) {
+              distanceDom.current.style.marginBottom = '0'
+            }
+          }, 200)
+        }
+      },
     }),
     []
   )
@@ -338,6 +353,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
         )
       })}
       <div
+        ref={distanceDom}
         style={{
           height: Math.max(getContainerHeight() - activeStepHeight, gap),
         }}
