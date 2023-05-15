@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "BUILD_TYPE=doc vite serve",
     "test": "jest",
+    "prepublishOnly": "npm run build",
     "build": "rimraf dist && BUILD_TYPE=lib vite build --outDir dist && tsc",
     "build:doc": "rimraf dist-docs && BUILD_TYPE=doc vite build --outDir dist-docs"
   },
