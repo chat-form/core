@@ -7,6 +7,7 @@ import React from 'react'
 import { SequenceCard } from '@chat-form/core'
 import { Card, Progress, Radio, Space } from 'antd'
 import styles from './index.module.css'
+import { slideIn } from '@chat-form/core/animations/slideIn'
 
 export default () => {
   const [percent, setPercent] = React.useState(0)
@@ -21,8 +22,8 @@ export default () => {
             Math.max(0, Math.floor((currentIndex / steps.length) * 100))
           )
         }}
-        initialSteps={[...Array(500).keys()].map((k) => `${k}`)}
-        steps={[...Array(1000).keys()].map((key, index) => {
+        initialSteps={[...Array(100).keys()].map((k) => `${k}`)}
+        steps={[...Array(500).keys()].map((key, index) => {
           return {
             id: `${key}`,
             renderStep: (ctx) =>
@@ -60,6 +61,7 @@ export default () => {
               ),
           }
         })}
+        {...slideIn(250)}
         scrollFn={(dom) => {
           dom.parentElement?.scrollTo({
             top: dom.offsetTop,

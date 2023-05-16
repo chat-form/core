@@ -65,6 +65,8 @@ export interface Ctx {
   isAboutToEnter: boolean
   /** Whether the current step is about to enter and start leaving animation */
   isAboutToExit: boolean
+  /** Whether the current step is about to switch state from inactive to active or vise versa */
+  isAboutToChange: boolean
   /** Navigate to a specific step
    * @param id step id
    * @param delay animation delay in ms
@@ -93,6 +95,10 @@ export interface Ref {
    * A map of step id to card dom
    */
   getCards: () => Record<string, HTMLDivElement | null>
+  /**
+   * get the reference of the bottom distance dom
+   */
+  getBottomDom: () => HTMLDivElement | null
   /**
    * greatly increase distance bottom to prevent scroll position blinking when active step height changes
    */
@@ -145,10 +151,27 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
     return last
   })
 
-  const { height: activeStepHeight = 0 } =
-    useSize(() => {
-      return stepDoms.current?.[getLastActiveStep()?.id!]
-    }) || {}
+  const getLastActiveStepDom = useMemoizedFn(() => {
+    return stepDoms.current?.[getLastActiveStep()?.id!]
+  })
+
+  const { height: activeStepHeight = 0 } = useSize(getLastActiveStepDom) || {}
+
+  const lockHeightBounceForAShortTime = useMemoizedFn(() => {
+    if (distanceDom.current) {
+      distanceDom.current.style.marginBottom = '99999999px'
+
+      setTimeout(() => {
+        if (distanceDom.current) {
+          distanceDom.current.style.marginBottom = '0'
+          distanceDom.current.style.height = `${Math.max(
+            getContainerHeight() - (getLastActiveStepDom()?.clientHeight || 0),
+            gap
+          )}px`
+        }
+      }, 200)
+    }
+  })
 
   const scrollToStep = useMemoizedFn((id?: string) => {
     const last = getLastActiveStep()
@@ -228,7 +251,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
       // move forward
       if (targetIndex > lastIndex) {
         navigateDirection.current = 'forward'
-        afterEnterCallback.current()
+        await afterEnterCallback.current()
         unstable_batchedUpdates(() => {
           setAboutToEnter([allSteps.current[targetIndex]])
           setSteps((s) => {
@@ -246,7 +269,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
       } else {
         // move backward
         navigateDirection.current = 'backward'
-        afterExitCallback.current()
+        await afterExitCallback.current()
         unstable_batchedUpdates(() => {
           const nextAboutToExit = allSteps.current
             .filter((_, index) => index > targetIndex)
@@ -290,16 +313,8 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
       gotoStep,
       scrollToStep,
       getCards: () => stepDoms.current,
-      unstable_lockHeightBounceForAShortTime: () => {
-        if (distanceDom.current) {
-          distanceDom.current.style.marginBottom = '99999999px'
-          setTimeout(() => {
-            if (distanceDom.current) {
-              distanceDom.current.style.marginBottom = '0'
-            }
-          }, 200)
-        }
-      },
+      getBottomDom: () => distanceDom.current,
+      unstable_lockHeightBounceForAShortTime: lockHeightBounceForAShortTime,
     }),
     []
   )
@@ -312,12 +327,13 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
     >
       {steps.map((step, index, arr) => {
         const isLast = index === arr.length - 1
+        const isAnimating = !!(aboutToEnter.length || aboutToExit.length)
         const isAboutToEnter = !!aboutToEnter.find((ele) => ele.id === step.id)
         const isAboutToExit = !!aboutToExit.find((ele) => ele.id === step.id)
         const isAboutToChange =
-          navigateDirection.current === 'forward'
+          (navigateDirection.current === 'forward'
             ? index === arr.length - 2
-            : index === arr.length - aboutToExit.length - 1
+            : index === arr.length - aboutToExit.length - 1) && isAnimating
 
         return (
           <div
