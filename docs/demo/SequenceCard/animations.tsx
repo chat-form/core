@@ -140,7 +140,7 @@ export default () => {
             },
           }
         })}
-        {...animation(250)}
+        {...animation()}
         scrollFn={(dom) => {
           dom.parentElement?.scrollTo({
             top: dom.offsetTop,

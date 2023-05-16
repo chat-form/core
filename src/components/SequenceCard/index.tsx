@@ -47,7 +47,10 @@ export interface Props<ExtraCtx extends Record<any, any> = {}> {
   /** Customize exit animate function
    *  @defaultValue opacity 1 - 0 linear
    */
-  exitAnimateFn?: (dom: HTMLDivElement, id: string) => Promise<void> | void
+  exitAnimateFn?: (
+    doms: HTMLDivElement[],
+    ids: string[]
+  ) => Promise<void> | void
   /** step change callback
    *  @defaultValue noop
    */
@@ -63,10 +66,12 @@ export interface Ctx {
   isActive: boolean
   /** Whether the current step is about to enter and start entering animation */
   isAboutToEnter: boolean
-  /** Whether the current step is about to enter and start leaving animation */
+  /** Whether the current step is about to exit and start leaving animation */
   isAboutToExit: boolean
-  /** Whether the current step is about to switch state from inactive to active or vise versa */
-  isAboutToChange: boolean
+  /** Whether the current step is switching state from active to inactive */
+  isPreviousActiveStep: boolean
+  /** Whether the current step is switching state from inactive to active */
+  isPreviousInactiveStep: boolean
   /** Navigate to a specific step
    * @param id step id
    * @param delay animation delay in ms
@@ -211,21 +216,14 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
   // leaving animation
   useLayoutEffect(() => {
     if (aboutToExit && aboutToExit.length) {
-      Promise.all(
-        aboutToExit.map(async (ele) => {
-          const dom = stepDoms.current[ele.id]
-          if (dom) {
-            await exitAnimateFn(dom, ele.id)
-            const animations = stepDoms.current[ele.id]?.getAnimations()
-            await Promise.all((animations || []).map((ele) => ele.finished))
-            animations?.forEach((ele) => {
-              ele.commitStyles()
-              ele.cancel()
-            })
-          }
-          return true
-        })
-      ).finally(() => {
+      const leavingDoms = aboutToExit.map((ele) => stepDoms.current[ele.id]!)
+      new Promise(async (res) => {
+        await exitAnimateFn(
+          leavingDoms,
+          aboutToExit.map((ele) => ele.id)
+        )
+        res(true)
+      }).finally(() => {
         afterExitCallback.current()
         scrollToStep()
       })
@@ -247,7 +245,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
       (ele) => ele.id === steps[steps.length - 1]?.id
     )
 
-    if (targetIndex !== -1) {
+    if (targetIndex !== -1 && targetIndex !== lastIndex) {
       // move forward
       if (targetIndex > lastIndex) {
         navigateDirection.current = 'forward'
@@ -327,13 +325,14 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
     >
       {steps.map((step, index, arr) => {
         const isLast = index === arr.length - 1
-        const isAnimating = !!(aboutToEnter.length || aboutToExit.length)
         const isAboutToEnter = !!aboutToEnter.find((ele) => ele.id === step.id)
         const isAboutToExit = !!aboutToExit.find((ele) => ele.id === step.id)
-        const isAboutToChange =
-          (navigateDirection.current === 'forward'
-            ? index === arr.length - 2
-            : index === arr.length - aboutToExit.length - 1) && isAnimating
+        const isPreviousInactiveStep =
+          navigateDirection.current === 'backward' &&
+          index === arr.length - aboutToExit.length - 1
+        const isPreviousActiveStep =
+          navigateDirection.current === 'forward' && index === arr.length - 2
+        const isActive = isLast || isPreviousInactiveStep
 
         return (
           <div
@@ -347,7 +346,9 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
               cs('card-wrapper'),
               isAboutToEnter && 'entering',
               isAboutToExit && 'leaving',
-              isAboutToChange && 'changing'
+              isActive && 'active',
+              isPreviousActiveStep && 'previous-active',
+              isPreviousInactiveStep && 'previous-inactive'
             )}
           >
             <div
@@ -359,8 +360,9 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
               {step.renderStep({
                 isAboutToEnter,
                 isAboutToExit,
-                isAboutToChange,
-                isActive: isLast,
+                isPreviousActiveStep,
+                isPreviousInactiveStep,
+                isActive,
                 gotoStep,
                 ...extraCtx,
               })}

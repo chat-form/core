@@ -61,7 +61,7 @@ export default () => {
               ),
           }
         })}
-        {...slideIn(250)}
+        {...slideIn()}
         scrollFn={(dom) => {
           dom.parentElement?.scrollTo({
             top: dom.offsetTop,
