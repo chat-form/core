@@ -48,7 +48,7 @@ export default () => {
       case 'slideDown':
         return slideDown
       case 'noAnimation':
-        return () => ({})
+        return () => () => {}
       case 'slideIn':
       default:
         return slideIn
@@ -140,7 +140,7 @@ export default () => {
             },
           }
         })}
-        {...animation()}
+        animationFn={animation()}
         scrollFn={(dom) => {
           dom.parentElement?.scrollTo({
             top: dom.offsetTop,

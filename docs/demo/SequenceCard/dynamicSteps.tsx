@@ -110,7 +110,7 @@ export default () => {
               },
             }
           })}
-          {...slideIn()}
+          animationFn={slideIn()}
           scrollFn={(dom) => {
             const sibling = dom.previousSibling as HTMLElement
             if (sibling) {

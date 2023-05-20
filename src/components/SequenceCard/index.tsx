@@ -41,16 +41,15 @@ export interface Props<ExtraCtx extends Record<any, any> = {}> {
    */
   scrollFn?: (dom: HTMLDivElement, id: string) => void
   /** Customize enter animate function
-   *  @defaultValue opacity 0 - 1 linear
+   *  @defaultValue no animation
    */
-  enterAnimateFn?: (dom: HTMLDivElement, id: string) => Promise<void> | void
-  /** Customize exit animate function
-   *  @defaultValue opacity 1 - 0 linear
-   */
-  exitAnimateFn?: (
-    doms: HTMLDivElement[],
-    ids: string[]
-  ) => Promise<void> | void
+  animationFn?: (params: {
+    aboutToEnter: HTMLDivElement[]
+    aboutToLeave: HTMLDivElement[]
+    aboutToActive: HTMLDivElement[]
+    aboutToInActive: HTMLDivElement[]
+    stepDoms: Record<string, HTMLDivElement>
+  }) => Promise<void> | void
   /** step change callback
    *  @defaultValue noop
    */
@@ -126,11 +125,10 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
     scrollFn = (dom) => {
       dom.scrollIntoView({ behavior: 'auto' })
     },
-    enterAnimateFn = asyncNoop,
-    exitAnimateFn = asyncNoop,
+    animationFn = asyncNoop,
   } = props
 
-  const stepDoms = useRef<Record<string, HTMLDivElement | null>>({})
+  const stepDoms = useRef<Record<string, HTMLDivElement>>({})
   const containerDom = useRef<HTMLDivElement>(null)
   const distanceDom = useRef<HTMLDivElement>(null)
   const allSteps = useLatest(_steps)
@@ -146,6 +144,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
   const afterEnterCallback = useRef(asyncNoop)
   const afterExitCallback = useRef(asyncNoop)
   const navigateDirection = useRef<'forward' | 'backward'>('forward')
+  const animationLock = useRef(Promise.resolve())
 
   const getLastActiveStep = useMemoizedFn(() => {
     const aboutToExitIds = aboutToExit.map((ele) => ele.id)
@@ -189,25 +188,36 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
     }
   })
 
+  const getDoms = useMemoizedFn((steps: Step[]) => {
+    return steps.map((ele) => stepDoms.current[ele.id]).filter(Boolean)
+  })
+
+  const getAboutToInactiveStep = useMemoizedFn(() => {
+    if (navigateDirection.current === 'forward') {
+      return steps[steps.length - 2] ?? steps[steps.length - 1]
+    }
+  })
+
+  const getAboutToActiveStep = useMemoizedFn(() => {
+    if (navigateDirection.current === 'backward') {
+      return steps[steps.length - aboutToExit.length - 1]
+    }
+  })
+
   // enter animation
   useLayoutEffect(() => {
     if (aboutToEnter && aboutToEnter.length) {
-      Promise.all(
-        aboutToEnter.map(async (ele) => {
-          const dom = stepDoms.current[ele.id]
-          if (dom) {
-            await enterAnimateFn(dom, ele.id)
-            const animations = stepDoms.current[ele.id]?.getAnimations()
-            await Promise.all((animations || []).map((ele) => ele.finished))
-            animations?.forEach((ele) => {
-              ele.commitStyles()
-              ele.cancel()
-            })
-            await afterEnterCallback.current()
-            return true
-          }
+      animationLock.current = new Promise<void>(async (resolve) => {
+        await animationFn({
+          stepDoms: stepDoms.current!,
+          aboutToEnter: getDoms(aboutToEnter),
+          aboutToLeave: [],
+          aboutToActive: [],
+          aboutToInActive: getDoms([getAboutToInactiveStep()!]),
         })
-      ).finally(() => {
+        await afterEnterCallback.current()
+        resolve()
+      }).finally(() => {
         scrollToStep()
       })
     }
@@ -216,13 +226,15 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
   // leaving animation
   useLayoutEffect(() => {
     if (aboutToExit && aboutToExit.length) {
-      const leavingDoms = aboutToExit.map((ele) => stepDoms.current[ele.id]!)
-      new Promise(async (res) => {
-        await exitAnimateFn(
-          leavingDoms,
-          aboutToExit.map((ele) => ele.id)
-        )
-        res(true)
+      animationLock.current = new Promise<void>(async (resolve) => {
+        await animationFn({
+          stepDoms: stepDoms.current!,
+          aboutToEnter: [],
+          aboutToLeave: getDoms(aboutToExit),
+          aboutToActive: getDoms([getAboutToActiveStep()!]),
+          aboutToInActive: [],
+        })
+        resolve()
       }).finally(() => {
         afterExitCallback.current()
         scrollToStep()
@@ -240,6 +252,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
 
   const gotoStep = useMemoizedFn(async (id: string, delay = 0) => {
     await new Promise((res) => setTimeout(res, delay))
+    await animationLock.current
     const targetIndex = allSteps.current.findIndex((ele) => ele.id === id)
     const lastIndex = allSteps.current.findIndex(
       (ele) => ele.id === steps[steps.length - 1]?.id
@@ -327,11 +340,8 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
         const isLast = index === arr.length - 1
         const isAboutToEnter = !!aboutToEnter.find((ele) => ele.id === step.id)
         const isAboutToExit = !!aboutToExit.find((ele) => ele.id === step.id)
-        const isPreviousInactiveStep =
-          navigateDirection.current === 'backward' &&
-          index === arr.length - aboutToExit.length - 1
-        const isPreviousActiveStep =
-          navigateDirection.current === 'forward' && index === arr.length - 2
+        const isPreviousInactiveStep = getAboutToActiveStep()?.id === step.id
+        const isPreviousActiveStep = getAboutToInactiveStep()?.id === step.id
         const isActive = isLast || isPreviousInactiveStep
 
         return (
@@ -342,6 +352,7 @@ const _SequenceCard = forwardRef((props: Props, ref: ReactRef<Ref>) => {
               }
             }}
             key={step.id}
+            data-step-id={step.id}
             className={classNames(
               cs('card-wrapper'),
               isAboutToEnter && 'entering',

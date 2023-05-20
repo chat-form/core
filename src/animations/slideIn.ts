@@ -1,22 +1,24 @@
-export const slideIn = (duration: number = 250) => ({
-  scrollFn: (dom: HTMLDivElement) => {
-    dom.scrollIntoView({ behavior: 'smooth' })
-  },
-  enterAnimateFn: async (dom: HTMLDivElement) => {
-    const animate = dom.animate([{ transform: 'translateX(200px)' }, { transform: 'translateX(0)' }], {
-      duration,
-      fill: 'forwards',
-    })
+import { Props } from "../components/SequenceCard"
 
-    await animate.finished;
-  },
-  exitAnimateFn: async (doms: HTMLDivElement[]) => {
-    await Promise.all(doms.map((dom, index) => {
-      return dom.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(200px)' }], {
-        delay: duration / doms.length * (doms.length - index - 1),
+export const slideIn = (duration: number = 250): Props['animationFn'] => {
+  return async ({ aboutToEnter, aboutToLeave }) => {
+    if (aboutToEnter.length > 0) {
+      const [dom] = aboutToEnter;
+      await dom.animate([{ transform: `translateX(${dom.clientWidth / 2}px)` }, { transform: 'translateX(0)' }], {
         duration,
         fill: 'forwards',
-      }).finished;
-    }));
-  },
-})
+      }).finished
+    }
+    if (aboutToLeave.length > 0) {
+      await Promise.all(aboutToLeave.map((dom, index) => {
+        return dom.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${dom.clientWidth / 2}px)` }], {
+          delay: duration / aboutToLeave.length * (aboutToLeave.length - index - 1),
+          duration,
+          fill: 'forwards',
+        }).finished.finally(() => {
+          dom.style.opacity = '0';
+        });
+      }));
+    }
+  }
+}

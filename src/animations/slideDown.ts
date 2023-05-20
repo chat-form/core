@@ -1,37 +1,51 @@
-export const slideDown = (duration: number = 250) => ({
-  scrollFn: (dom: HTMLDivElement) => {
-    dom.scrollIntoView({ behavior: 'smooth' })
-  },
-  enterAnimateFn: async (dom: HTMLDivElement) => {
-    const height = dom.clientHeight;
-    dom.style.overflow = 'hidden';
-    dom.style.height = '0';
-    const animate = dom.animate([{ height: '0px' }, { height: `${height}px` }], {
-      duration,
-      fill: 'forwards',
-      easing: 'ease-in-out'
-    })
-    await animate.finished
-    animate.cancel();
-    dom.style.height = '';
-    dom.style.overflow = '';
-  },
-  exitAnimateFn: async (doms: HTMLDivElement[]) => {
-    const sibling = doms?.[0]?.previousElementSibling as HTMLDivElement
-    if (sibling) {
-      doms.forEach((dom) => dom.style.opacity = '0');
-      sibling.style.overflow = 'hidden';
-      const height = sibling.clientHeight;
-      const animate = sibling.animate([{ height: '0px', overflow: 'hidden' }, { height: `${height}px`, overflow: 'hidden' }], {
+import { Props } from "../components/SequenceCard"
+
+export const slideDown = (duration: number = 250): Props['animationFn'] => {
+  return async ({ aboutToEnter, aboutToLeave, aboutToActive, aboutToInActive }) => {
+    if (aboutToEnter.length > 0) {
+      const [dom] = aboutToEnter;
+      const [inactive] = aboutToInActive;
+      if (!dom) {
+        return;
+      }
+
+      dom.style.opacity = "0"
+
+      inactive?.animate?.([{ height: `${inactive.clientHeight * 1.2}px` }, { height: `${inactive.clientHeight}px` }], {
+        duration: duration,
+        fill: 'forwards',
+      })
+
+      const animate = dom.animate([{ opacity: 0 }, { opacity: 1 }], {
+        delay: duration / 2,
+        duration: duration / 2,
+        fill: 'forwards',
+      })
+
+      await animate.finished.finally(() => {
+        animate.cancel();
+        dom.style.opacity = ""
+      })
+    }
+    if (aboutToLeave.length > 0) {
+      aboutToLeave.forEach((dom) => dom.style.opacity = '0');
+      const [dom] = aboutToActive;
+      if (!dom) {
+        return;
+      }
+
+      dom.style.overflow = 'hidden';
+      const height = dom.clientHeight;
+      const animate = dom.animate([{ height: `${height * 0.5}px`, overflow: 'hidden' }, { height: `${height}px`, overflow: 'hidden' }], {
         duration,
         fill: 'forwards',
         easing: 'ease-in-out'
       })
       await animate.finished.finally(() => {
         animate.cancel();
-        sibling.style.overflow = '';
-        sibling.style.height = '';
+        dom.style.overflow = '';
+        dom.style.height = '';
       })
     }
-  },
-})
+  }
+}

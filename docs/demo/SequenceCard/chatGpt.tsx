@@ -120,7 +120,7 @@ export default () => {
               },
             }
           })}
-          {...slideDown()}
+          animationFn={slideDown()}
           scrollFn={(dom) => {
             const sibling = dom.previousSibling as HTMLElement
             if (sibling) {

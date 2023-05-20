@@ -23,7 +23,7 @@ export default () => {
           )
         }}
         initialSteps={[...Array(100).keys()].map((k) => `${k}`)}
-        steps={[...Array(500).keys()].map((key, index) => {
+        steps={[...Array(200).keys()].map((key, index) => {
           return {
             id: `${key}`,
             renderStep: (ctx) =>
@@ -61,7 +61,7 @@ export default () => {
               ),
           }
         })}
-        {...slideIn()}
+        animationFn={slideIn()}
         scrollFn={(dom) => {
           dom.parentElement?.scrollTo({
             top: dom.offsetTop,
